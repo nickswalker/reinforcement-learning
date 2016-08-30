@@ -15,7 +15,7 @@ class TicTacToeState(State):
         self.representation = representation
 
     def __hash__(self):
-        return int(hashlib.md5(self.__str__()).hexdigest(), 16)
+        return int(hashlib.md5(self.__str__().encode()).hexdigest(), 16)
 
     def __eq__(self, other):
         if isinstance(other, TicTacToeState):
@@ -24,14 +24,14 @@ class TicTacToeState(State):
 
     def __str__(self):
         string_representation = str()
-        for x in range(0, len(self.representation)):
-            for y in range(0, len(self.representation[0])):
+        for y in range(0, len(self.representation)):
+            for x in range(0, len(self.representation[0])):
                 if self.representation[y][x] is None:
                     string_representation += "_"
                 else:
                     string_representation += self.representation[y][x]
             string_representation += "\n"
-        return string_representation.encode()
+        return string_representation
 
 
 class TicTacToeAction(Action):
@@ -50,7 +50,7 @@ class TicTacToeAgent(Agent):
     def see_result(self, state: State):
         return
 
-    def prepare_for_new_episode(self):
+    def prepare_for_new_episode(self, state):
         return
 
 
@@ -127,10 +127,10 @@ class WinTicTacToeTask(Task):
             return first
 
         count = 0
-        first = state.representation[goal - 1][goal - 1]
+        first = state.representation[goal - 1][0]
 
         for i in range(0, goal):
-            element = state.representation[goal - 1 - i][goal - 1 - i]
+            element = state.representation[goal - 1 - i][i]
             if first == element and element is not None:
                 count += 1
 
@@ -143,8 +143,8 @@ class WinTicTacToeTask(Task):
 class RandomAgent(TicTacToeAgent):
     def choose_action(self, state: State):
         options = []
-        for x in range(0, len(state.representation)):
-            for y in range(0, len(state.representation[0])):
+        for y in range(0, len(state.representation)):
+            for x in range(0, len(state.representation[0])):
                 if state.representation[y][x] is None:
                     options.append((x, y))
 
@@ -153,69 +153,9 @@ class RandomAgent(TicTacToeAgent):
         return TicTacToeAction(self.symbol, choice[0], choice[1])
 
 
-class LearningAgent(TicTacToeAgent):
-    def __init__(self, symbol: str, world, task):
-        super().__init__(symbol, world, task)
-        self.table = {}
-        self.alpha = 0.9
-        self.previous_state = None
-        self.was_exploratory = False
-
-    def value_of_state(self, state: State) -> float:
-        existing_value = self.table.get(state)
-
-        if existing_value is None:
-            new_value = 0.5
-            winner = self.task.winner(state)
-            if winner == self.symbol:
-                new_value = 1.0
-            elif winner != self.symbol and winner is not None:
-                new_value = 0.0
-            self.table[state] = new_value
-
-        return self.table.get(state)
-
-    def value_of_action_in_state(self, state, x, y) -> float:
-        representation_copy = deepcopy(state.representation)
-        representation_copy[y][x] = self.symbol
-        new_state = TicTacToeState(representation_copy)
-
-        return self.value_of_state(new_state)
-
+class InteractiveAgent(TicTacToeAgent):
     def choose_action(self, state) -> Action:
-        self.previous_state = state
-        options = []
-        for x in range(0, len(state.representation)):
-            for y in range(0, len(state.representation[0])):
-                if state.representation[y][x] is None:
-                    options.append((x, y))
+        chosen_x = int(input("x"))
+        chosen_y = int(input("y"))
 
-        if random.random() > 0.9:
-            self.was_exploratory = True
-            choice = random.choice(options)
-            return TicTacToeAction(self.symbol, choice[0], choice[1])
-        else:
-            self.was_exploratory = False
-
-        max_option = None
-        max_value = float("-inf")
-        for option in options:
-            value = self.value_of_action_in_state(state, option[0], option[1])
-            if value > max_value:
-                max_value = value
-                max_option = option
-
-        assert max_option is not None
-        return TicTacToeAction(self.symbol, max_option[0], max_option[1])
-
-    def see_result(self, state_prime):
-        if self.was_exploratory or self.previous_state is None:
-            return
-        prev_value = self.value_of_state(self.previous_state)
-        prime_value = self.value_of_state(state_prime)
-
-        error = prime_value - prev_value
-        self.table[self.previous_state] = prev_value + self.alpha * error
-
-    def prepare_for_new_episode(self):
-        self.previous_state = None
+        return TicTacToeAction(self.symbol, chosen_x, chosen_y)
