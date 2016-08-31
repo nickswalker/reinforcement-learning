@@ -1,26 +1,32 @@
 import copy
 import sys
 
+import numpy as np
+import scipy as scipy
+from scipy import stats
+
 from plotting import plot_evaluations
 from tic_tac_toe import RandomAgent, WinTicTacToeTask, TicTacToeDomain, InteractiveAgent
 from tic_tac_toe.learning_agent import LearningAgent
 
 learning_agent_symbol = "X"
 random_agent_symbol = "O"
-evaluation_period = 100
+evaluation_period = 200
 evaluation_trials = 100
+significance_level = 0.05
 
 
 def main():
     num_evaluations = int(sys.argv[1])
     num_trials = int(sys.argv[2])
+    assert num_trials > 1
     evaluations_mean = []
     evaluations_variance = []
     series = [i * evaluation_period for i in range(0, num_evaluations)]
     n = 0
     for i in range(0, num_trials):
         print("trial " + str(i))
-        j = 0
+        j = int(0)
         n += 1
         for (num_episodes, table) in train_agent(evaluation_period, num_evaluations):
             evaluation = evaluate(table)
@@ -44,7 +50,17 @@ def main():
             j += 1
 
     evaluations_variance = [variance / (n - 1) for variance in evaluations_variance]
-    plot_evaluations(series, evaluations_mean)
+
+    confidences = []
+    for (mean, variance) in zip(evaluations_mean, evaluations_variance):
+        crit = scipy.stats.t.ppf(1.0 - significance_level, n - 1)
+        width = crit * np.math.sqrt(variance) / np.math.sqrt(n)
+        confidences.append(width)
+
+    a = np.c_[series, evaluations_mean, evaluations_variance]
+    np.savetxt("n" + str(num_trials) + "_experiment.csv", a, delimiter=",")
+
+    plot_evaluations(series, evaluations_mean, confidences)
 
 
 def evaluate(table) -> float:

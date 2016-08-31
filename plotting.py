@@ -1,4 +1,5 @@
 from matplotlib import pyplot as pp
+from matplotlib.backends.backend_pdf import PdfPages
 
 
 def plot(winner):
@@ -24,6 +25,14 @@ def plot(winner):
     pp.show()
 
 
-def plot_evaluations(series, evaluations):
-    pp.plot(series, evaluations)
-    pp.show()
+def plot_evaluations(series, evaluations, confidences):
+    pp.errorbar(series, evaluations, yerr=confidences)
+    ax = pp.axes()
+    ax.set_xlabel('Games spent learning')
+    ax.set_ylabel('Percentage win or draw')
+
+    pdf = PdfPages('multipage.pdf')
+
+    pdf.savefig()
+
+    pdf.close()
