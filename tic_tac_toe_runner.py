@@ -1,85 +1,102 @@
-import pickle
+import copy
+import sys
 
-import matplotlib.pyplot as pp
-
-from tic_tac_toe import RandomAgent, WinTicTacToeTask, TicTacToeDomain, InteractiveAgent, TicTacToeState
+from plotting import plot_evaluations
+from tic_tac_toe import RandomAgent, WinTicTacToeTask, TicTacToeDomain, InteractiveAgent
 from tic_tac_toe.learning_agent import LearningAgent
 
-
-def save_table(table):
-    with open('learned.pickle', 'wb') as handle:
-        pickle.dump(table, handle)
-
-
-def load_table():
-    with open('learned.pickle', 'rb') as handle:
-        return pickle.load(handle)
+learning_agent_symbol = "X"
+random_agent_symbol = "O"
+evaluation_period = 100
+evaluation_trials = 100
 
 
-def describe_table(table):
-    num_with_value = {}
-    for (key, value) in table.items():
-        existing_value = num_with_value.get(value, 0.0)
-        num_with_value[value] = int(existing_value + 1)
-    return num_with_value
+def main():
+    num_evaluations = int(sys.argv[1])
+    num_trials = int(sys.argv[2])
+    evaluations_mean = []
+    evaluations_variance = []
+    series = [i * evaluation_period for i in range(0, num_evaluations)]
+    n = 0
+    for i in range(0, num_trials):
+        print("trial " + str(i))
+        j = 0
+        n += 1
+        for (num_episodes, table) in train_agent(evaluation_period, num_evaluations):
+            evaluation = evaluate(table)
+            mean = None
+            variance = None
+            if j > len(evaluations_mean) - 1:
+                evaluations_mean.append(0.0)
+                evaluations_variance.append(0.0)
+                mean = 0.0
+                variance = 0.0
+            else:
+                mean = evaluations_mean[j]
+                variance = evaluations_variance[j]
+
+            delta = evaluation - mean
+            mean += delta / n
+            variance += delta * (evaluation - mean)
+
+            evaluations_mean[j] = mean
+            evaluations_variance[j] = variance
+            j += 1
+
+    evaluations_variance = [variance / (n - 1) for variance in evaluations_variance]
+    plot_evaluations(series, evaluations_mean)
 
 
-def query(table):
-    representation = [[None] * 3] * 3
-    while True:
-        for y in range(0, 3):
-            for x in range(0, 3):
-                in_value = input(str(x) + ", " + str(y))
-                if in_value == " ":
-                    in_value = None
-                representation[y][x] = in_value
-
-        state = TicTacToeState(representation)
-        print(table.get(state))
-
-
-def plot(winner):
-    to_plot = {}
-    for i in range(0, len(winner)):
-        item = winner[i]
-        list = to_plot.get(item, [])
-        list.append(i)
-        to_plot[item] = list
-
-    markers = {}
-    markers["X"] = "x"
-    markers["O"] = "o"
-    markers[None] = "D"
-
-    position = {}
-    position["X"] = 0
-    position["O"] = 0.5
-    position[None] = -0.5
-
-    for (key, value) in to_plot.items():
-        size = [20 * 4 ** n for n in range(len(value))]
-        pp.scatter(value, len(value) * [position[key]], marker=markers[key], s=80)
-    pp.show()
-
-
-evaluate()
-
-
-def train_agent(episodes):
+def evaluate(table) -> float:
     task = WinTicTacToeTask()
     domain = TicTacToeDomain(3)
-    # task = WinLadder()
-    # domain = LadderDomain(5)
 
-    random_agent = RandomAgent("X", domain, task)
-    learning_agent = LearningAgent("O", domain, task)
+    random_agent = RandomAgent(random_agent_symbol, domain, task)
+    learning_agent = LearningAgent(learning_agent_symbol, domain, task)
+    learning_agent.table = table
+    learning_agent.epsilon = 0.0
+    learning_agent.alpha = 0.0
+
     agents = [random_agent, learning_agent]
 
-    winner = []
+    win_count = 0
 
-    for i in range(0, episodes):
-        if i % 100 is 0:
+    for i in range(0, evaluation_trials):
+        match_ended = False
+        while not match_ended:
+            for agent in agents:
+                action = agent.choose_action(domain.current_state())
+                domain.apply_action(action)
+                if task.stateisfinal(domain.current_state()):
+                    match_ended = True
+                    final_state = domain.current_state()
+                    domain.reset()
+                    task_winner = task.winner(final_state)
+                    if task_winner == learning_agent_symbol or task_winner is None:
+                        win_count += 1
+
+                    break
+
+    return float(win_count) / float(evaluation_trials)
+
+
+def train_agent(evaluation_period, num_stops):
+    task = WinTicTacToeTask()
+    domain = TicTacToeDomain(3)
+
+    random_agent = RandomAgent(random_agent_symbol, domain, task)
+    learning_agent = LearningAgent(learning_agent_symbol, domain, task)
+    agents = [random_agent, learning_agent]
+
+    stops = 0
+    for i in range(0, evaluation_period * num_stops):
+        if i % evaluation_period is 0:
             print(i)
+            stops += 1
+            yield i, copy.deepcopy(learning_agent.table)
+
+        if num_stops == stops:
+            return
         match_ended = False
         while not match_ended:
             unseen_agents = set(agents.copy())
@@ -92,29 +109,19 @@ def train_agent(episodes):
                     match_ended = True
                     final_state = domain.current_state()
                     domain.reset()
-                    task_winner = task.winner(final_state)
-                    winner.append(task_winner)
                     for other_agent in unseen_agents:
                         other_agent.see_result(final_state)
                         other_agent.prepare_for_new_episode(domain.current_state())
 
                     break
 
-    print("Learning agent: " + str(winner.count(learning_agent.symbol)))
-    print("Random agent: " + str(winner.count(random_agent.symbol)))
-    print("Draw: " + str(winner.count(None)))
-
-    plot(winner)
-
-    return learning_agent.table
-
 
 def interactive(table):
     task = WinTicTacToeTask()
     domain = TicTacToeDomain(3)
 
-    interactive_agent = InteractiveAgent("X", domain, task)
-    learning_agent = LearningAgent("O", domain, task)
+    interactive_agent = InteractiveAgent(random_agent_symbol, domain, task)
+    learning_agent = LearningAgent(learning_agent_symbol, domain, task)
     learning_agent.table = table
     learning_agent.epsilon = 0.0
 
@@ -138,7 +145,4 @@ def interactive(table):
                     print(str(domain.current_state()))
 
 
-table = train_agent(200000)
-save_table(table)
-
-query(table)
+main()
