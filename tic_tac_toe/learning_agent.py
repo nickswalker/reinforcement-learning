@@ -3,15 +3,18 @@ from copy import deepcopy
 
 from action import Action
 from state import State
+
 from tic_tac_toe import TicTacToeAgent, TicTacToeState, TicTacToeAction
 
 
 class LearningAgent(TicTacToeAgent):
-    def __init__(self, symbol: str, world, task):
+    def __init__(self, symbol: str, world, task, alpha=0.2, epsilon=0.1,
+                 initial_value=0.5):
         super().__init__(symbol, world, task)
         self.table = {}
-        self.alpha = 0.2
-        self.epsilon = 0.1
+        self.alpha = alpha
+        self.epsilon = epsilon
+        self.initial_value = initial_value
         self.previous_state = world.current_state()
         self.previous_move = None
         self.was_exploratory = False
@@ -20,7 +23,7 @@ class LearningAgent(TicTacToeAgent):
         existing_value = self.table.get(state)
 
         if existing_value is None:
-            new_value = 0.5
+            new_value = self.initial_value
             winner = self.task.winner(state)
             if winner == self.symbol:
                 new_value = 1.0
@@ -68,7 +71,8 @@ class LearningAgent(TicTacToeAgent):
         self.update_value(self.previous_state, state)
         self.previous_state = state
 
-        self.previous_move = self.state_for_action(state, max_option[0], max_option[1])
+        self.previous_move = self.state_for_action(state, max_option[0],
+                                                   max_option[1])
         self.update_value(self.previous_move, state)
 
         return TicTacToeAction(self.symbol, max_option[0], max_option[1])

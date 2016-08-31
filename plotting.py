@@ -2,37 +2,19 @@ from matplotlib import pyplot as pp
 from matplotlib.backends.backend_pdf import PdfPages
 
 
-def plot(winner):
-    to_plot = {}
-    for i in range(0, len(winner)):
-        item = winner[i]
-        list = to_plot.get(item, [])
-        list.append(i)
-        to_plot[item] = list
+class Plot:
+    def __init__(self):
+        self.ax = pp.axes()
+        self.ax.set_xlabel('Games spent learning')
+        self.ax.set_ylabel('Percentage win or draw')
 
-    markers = {}
-    markers["X"] = "x"
-    markers["O"] = "o"
-    markers[None] = "D"
+    def plot_evaluations(self, series, evaluations, variances, confidences,
+                         label):
+        pp.errorbar(series, evaluations, yerr=confidences, label=label)
 
-    position = {}
-    position["X"] = 0
-    position["O"] = 0.5
-    position[None] = -0.5
+    def save(self):
+        pdf = PdfPages('plot.pdf')
 
-    for (key, value) in to_plot.items():
-        pp.scatter(value, len(value) * [position[key]], marker=markers[key], s=80)
-    pp.show()
+        pdf.savefig()
 
-
-def plot_evaluations(series, evaluations, confidences):
-    pp.errorbar(series, evaluations, yerr=confidences)
-    ax = pp.axes()
-    ax.set_xlabel('Games spent learning')
-    ax.set_ylabel('Percentage win or draw')
-
-    pdf = PdfPages('multipage.pdf')
-
-    pdf.savefig()
-
-    pdf.close()
+        pdf.close()

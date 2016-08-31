@@ -3,11 +3,11 @@ import random
 from copy import deepcopy
 from typing import List
 
-from action import Action
-from agent import Agent
-from domain import Domain
-from state import State
-from task import Task
+from rl.action import Action
+from rl.agent import Agent
+from rl.domain import Domain
+from rl.state import State
+from rl.task import Task
 
 
 class TicTacToeState(State):

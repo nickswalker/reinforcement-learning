@@ -5,7 +5,6 @@ import numpy as np
 import scipy as scipy
 from scipy import stats
 
-from plotting import plot_evaluations
 from tic_tac_toe import RandomAgent, WinTicTacToeTask, TicTacToeDomain, InteractiveAgent
 from tic_tac_toe.learning_agent import LearningAgent
 
@@ -19,6 +18,15 @@ significance_level = 0.05
 def main():
     num_evaluations = int(sys.argv[1])
     num_trials = int(sys.argv[2])
+
+    book_results = run_book(num_trials, num_evaluations)
+
+    a = np.c_[
+        book_results[0], book_results[1], book_results[2], book_results[3]]
+    np.savetxt("n" + str(num_trials) + "_book.csv", a, delimiter=",")
+
+
+def run_book(num_trials, num_evaluations):
     assert num_trials > 1
     evaluations_mean = []
     evaluations_variance = []
@@ -28,7 +36,8 @@ def main():
         print("trial " + str(i))
         j = int(0)
         n += 1
-        for (num_episodes, table) in train_agent(evaluation_period, num_evaluations):
+        for (num_episodes, table) in train_agent(evaluation_period,
+                                                 num_evaluations):
             evaluation = evaluate(table)
             mean = None
             variance = None
@@ -49,7 +58,8 @@ def main():
             evaluations_variance[j] = variance
             j += 1
 
-    evaluations_variance = [variance / (n - 1) for variance in evaluations_variance]
+    evaluations_variance = [variance / (n - 1) for variance in
+                            evaluations_variance]
 
     confidences = []
     for (mean, variance) in zip(evaluations_mean, evaluations_variance):
@@ -57,10 +67,12 @@ def main():
         width = crit * np.math.sqrt(variance) / np.math.sqrt(n)
         confidences.append(width)
 
-    a = np.c_[series, evaluations_mean, evaluations_variance]
-    np.savetxt("n" + str(num_trials) + "_experiment.csv", a, delimiter=",")
+    return series, evaluations_mean, evaluations_variance, confidences
 
-    plot_evaluations(series, evaluations_mean, confidences)
+
+def plot_comparison():
+    np.loadtxt()
+
 
 
 def evaluate(table) -> float:
