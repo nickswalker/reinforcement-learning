@@ -1,0 +1,137 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% University/School Laboratory Report
+% LaTeX Template
+% Version 3.1 (25/3/14)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Linux and Unix Users Group at Virginia Tech Wiki 
+% (https://vtluug.org/wiki/Example_LaTeX_chem_lab_report)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass{article}
+
+\usepackage{graphicx} % Required for the inclusion of images
+\usepackage{natbib} % Required to change bibliography style to APA
+\usepackage{amsmath} % Required for some math elements 
+\usepackage[final]{pdfpages}
+\usepackage[parfill]{parskip}
+
+\setlength\parindent{0pt} % Removes all indentation from paragraphs
+
+\renewcommand{\labelenumi}{\alph{enumi}.} % Make numbering in the enumerate environment by letter rather than number (e.g. section 6)
+
+%\usepackage{times} % Uncomment to use the Times New Roman font
+
+%----------------------------------------------------------------------------------------
+%	DOCUMENT INFORMATION
+%----------------------------------------------------------------------------------------
+
+\title{Modifications to the book's tic-tac-toe agent \\ CS 394R Fall 2016} % Title
+
+\author{Nick \textsc{Walker}} % Author name
+
+\date{\today} % Date for the report
+
+\begin{document}
+	
+	\maketitle % Insert the title, author and date
+	
+	
+	%----------------------------------------------------------------------------------------
+	%	SECTION 1
+	%----------------------------------------------------------------------------------------
+	
+	\section{Objective}
+	
+	Survey modifications to the tic-tac-toe approach presented in section 1.5 of \textit{Reinforcement Learning: An Introduction}. Determine how they effect learning performance, and understand their potential utility in more substantial settings.
+	
+	\begin{center}\end{center}
+
+	
+	\subsection{The book's approach}
+	
+	Sutton outlines a rudimentary temporal difference approach to tic-tac-toe. A value function is used to estimate the probability that the agent will win after entering the state. As the agent interacts with the game, the value of a state is shifted towards the value of the state that immediately follows it.
+	
+	\begin{figure}[h]
+		\begin{center}
+			$\mathit{V(s) \leftarrow V(s) + \alpha \big[V(s') - V(s)\big]}$
+			\caption{Value updates.}
+		\end{center}
+	\end{figure}
+	
+	The agent can identify victories and losses, assigning these states a value of 1.0 and 0.0 respectively. Other states' values are initialized to 0.5. The agent acts according to an $\epsilon$-greedy policy, choosing an arbitrary but non-random action in event of a tie. Value updates are not done during $\epsilon$ actions.
+	
+	\subsection{Experimental setup}
+	
+	The learning agent plays against a random agent, which selects from its available actions uniformly at random. The random agent always plays the first move. In order to measure how its policy performs over time, the learning agent periodically plays 100 rounds with its value function frozen. The percentage of these rounds it wins or draws is the principle metric used to evaluate a policy. $\alpha$ is 0.2 and $\epsilon$ is 0.1 unless otherwise noted.
+	
+	
+	%----------------------------------------------------------------------------------------
+	%	SECTION 2
+	%----------------------------------------------------------------------------------------
+	
+	\section{Modifications}
+	
+	\subsection{Optimistic initial values}
+	
+	Section 2.5 of the book discusses how optimistic initial value estimates encourage exploration. This suggests a simple modification to the approach; initialize all state-value estimates to 1.0, except for those of losing states. I expected that the resultant thorough exploration would in turn lead to faster convergence. This is not the case.
+	
+		\begin{figure}[h]
+			\begin{center}
+				\includegraphics[width=\textwidth]{figure_2.pdf}
+				\caption{Optimistic initial values lead to longer convergence times. Pessimistic initial values (0.2) perform pooly as well.}
+			\end{center}
+		\end{figure}
+	
+	Inspecting the behavior of the agent, it is clear that the average true state-value is much lower than 1.0. The agent, confronted with many appealing actions, is doomed to try them repeatedly as their value estimates slowly dwindle towards truth. Even if the agent incidentally selects the optimal action, this action usually has less than 1.0 true value, so it must explore all other actions before it will learn to use the optimal one. With this task, the results suggest that initial values should be chosen to closely approximate true values.
+
+		
+	\subsection{Random tie-breaking}
+	
+	In the event that there are multiple actions that will result in a state with the same maximum value, the book's simple approach does not provide a principled way of making a selection. Early in the learning process, most states have the same value, so this would seem to introduce an important bias into the learning process.
+	
+		\begin{figure}[h]
+			\begin{center}
+				\includegraphics[width=\textwidth]{figure_4.pdf}
+				\caption{Random tie breaking seems to have little effect. If anything, the bias of my implementation towards the moves on the upper left of the board, actually assists the agent early on.}
+			\end{center}
+		\end{figure}
+		
+	The bias turns out to be too small to have an effect on the overall rate of convergence. One could foresee however that in a more substantial domain with longer episodes, a bias towards some actions would unduly divert exploration to a specific area of the task.
+	
+	\subsection{Self-play training}
+	
+
+	Does playing against a learning adversary improve the rate of convergence of policy performance? My inclination was to draw a parallel to a human practicing with a skilled opponent. The human might be expected to improve his performance more quickly than if never challenged. 
+	
+			\begin{figure}[h]
+				\begin{center}
+					\includegraphics[width=\textwidth]{figure_5.pdf}
+					\caption{An agent trained against a learning opponent plateaus early. Note the greater variance.}
+				\end{center}
+			\end{figure}
+			
+	
+	Of course, tic-tac-toe is a zero-sum game. If both agents are learning with the same approach, they have an equal chance of achieving the upper hand over one another (slightly biased in favor of the agent going first, which was the opponent in this case). Once an agent gains a performance advantage, the nature of tic-tac-toe permits no purchase, and the opponent is locked out of high value states. This experiment raises the intriguing idea of designing learning agents specifically to facilitate the training of other agents. Perhaps a \textit{club} of agents might be able to--through symbiotic opposition--see performance gains in very difficult tasks.
+
+	%----------------------------------------------------------------------------------------
+	%	SECTION 3
+	%----------------------------------------------------------------------------------------
+	
+	\section{Conclusions}
+
+	Though the book's approach is elementary and suited only for simple tasks, this exploration provided insight into fundamental parameters of temporal-difference methods. No doubt the ideas I have encountered will appear throughout the course, and this test-bed will influence my implementation of more substantial methods.
+	
+	
+\end{document}

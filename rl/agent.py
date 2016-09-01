@@ -1,6 +1,6 @@
-from action import Action
-from domain import Domain
-from task import Task
+from rl.action import Action
+from rl.domain import Domain
+from rl.task import Task
 
 
 class Agent(object):

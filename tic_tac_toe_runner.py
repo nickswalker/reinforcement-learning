@@ -6,27 +6,66 @@ import scipy as scipy
 from scipy import stats
 
 from tic_tac_toe import RandomAgent, WinTicTacToeTask, TicTacToeDomain, InteractiveAgent
+from tic_tac_toe.back_trace_agent import BacktraceAgent
 from tic_tac_toe.learning_agent import LearningAgent
 
 learning_agent_symbol = "X"
 random_agent_symbol = "O"
-evaluation_period = 200
+evaluation_period = 1200
 evaluation_trials = 100
-significance_level = 0.05
+significance_level = 0.10
 
 
 def main():
     num_evaluations = int(sys.argv[1])
     num_trials = int(sys.argv[2])
+    experiment_num = int(sys.argv[3])
 
-    book_results = run_book(num_trials, num_evaluations)
+    def save(name, results):
+        data = [*results]
+        np.savetxt("results/n" + str(num_trials) + "_" + name + ".csv", data, delimiter=",")
 
-    a = np.c_[
-        book_results[0], book_results[1], book_results[2], book_results[3]]
-    np.savetxt("n" + str(num_trials) + "_book.csv", a, delimiter=",")
+    if experiment_num == 0:
+        book_results = run_evaluations(num_trials, num_evaluations)
+        save("standard", book_results)
+    elif experiment_num == 1:
+        optimistic_results = run_evaluations(num_trials, num_evaluations, initial_value=1.0)
+        save("optimistic", optimistic_results)
+    elif experiment_num == 2:
+        go_first_results = run_evaluations(num_trials, num_evaluations, learning_agent_first=True)
+        save("first", go_first_results)
+    elif experiment_num == 3:
+        epsilon_results = run_evaluations(num_trials, num_evaluations, epsilon=0.15)
+        save("epsilon", epsilon_results)
+    elif experiment_num == 4:
+        learn_epsilon = run_evaluations(num_trials, num_evaluations, learn_from_exploration=True, epsilon=0.2)
+        save("learn-epsilon", learn_epsilon)
+    elif experiment_num == 5:
+        learn_epsilon = run_evaluations(num_trials, num_evaluations, backtrace_agent=True)
+        save("backtrace", learn_epsilon)
+    elif experiment_num == 6:
+        learn_epsilon = run_evaluations(num_trials, num_evaluations, random_tie_breaking=True)
+        save("random-tie-breaking", learn_epsilon)
+    elif experiment_num == 7:
+        pessimistic_results = run_evaluations(num_trials, num_evaluations, initial_value=0.2)
+        save("pessimistic", pessimistic_results)
+    elif experiment_num == 8:
+        optimistic_alpha_results = run_evaluations(num_trials, num_evaluations, initial_value=1.0, alpha=0.6)
+        save("optimistic-alpha", optimistic_alpha_results)
+    elif experiment_num == 9:
+        self_play_results = run_evaluations(num_trials, num_evaluations, self_play=True)
+        save("self-play", self_play_results)
 
 
-def run_book(num_trials, num_evaluations):
+def run_evaluations(num_trials, num_evaluations,
+                    initial_value=0.5,
+                    learning_agent_first=False,
+                    epsilon=0.1,
+                    learn_from_exploration=False,
+                    backtrace_agent=False,
+                    random_tie_breaking=False,
+                    alpha=0.2,
+                    self_play=False):
     assert num_trials > 1
     evaluations_mean = []
     evaluations_variance = []
@@ -37,7 +76,15 @@ def run_book(num_trials, num_evaluations):
         j = int(0)
         n += 1
         for (num_episodes, table) in train_agent(evaluation_period,
-                                                 num_evaluations):
+                                                 num_evaluations,
+                                                 initial_value=initial_value,
+                                                 learning_agent_first=learning_agent_first,
+                                                 epsilon=epsilon,
+                                                 update_on_exploration=learn_from_exploration,
+                                                 backtrace_agent=backtrace_agent,
+                                                 random_tie_breaking=random_tie_breaking,
+                                                 alpha=alpha,
+                                                 self_play=self_play):
             evaluation = evaluate(table)
             mean = None
             variance = None
@@ -68,11 +115,6 @@ def run_book(num_trials, num_evaluations):
         confidences.append(width)
 
     return series, evaluations_mean, evaluations_variance, confidences
-
-
-def plot_comparison():
-    np.loadtxt()
-
 
 
 def evaluate(table) -> float:
@@ -108,13 +150,37 @@ def evaluate(table) -> float:
     return float(win_count) / float(evaluation_trials)
 
 
-def train_agent(evaluation_period, num_stops):
+def train_agent(evaluation_period, num_stops, initial_value=0.5,
+                learning_agent_first=False,
+                epsilon=0.1,
+                update_on_exploration=False,
+                backtrace_agent=False,
+                random_tie_breaking=False,
+                alpha=0.2,
+                self_play=False):
     task = WinTicTacToeTask()
     domain = TicTacToeDomain(3)
 
     random_agent = RandomAgent(random_agent_symbol, domain, task)
-    learning_agent = LearningAgent(learning_agent_symbol, domain, task)
+    if backtrace_agent:
+        learning_agent = BacktraceAgent(learning_agent_symbol, domain, task,
+                                        initial_value=initial_value,
+                                        epsilon=epsilon,
+                                        update_exploratory=update_on_exploration)
+    else:
+        learning_agent = LearningAgent(learning_agent_symbol, domain, task,
+                                       initial_value=initial_value,
+                                       epsilon=epsilon,
+                                       update_exploratory=update_on_exploration,
+                                       random_tie_breaking=random_tie_breaking,
+                                       alpha=alpha)
+
+    if self_play:
+        random_agent = LearningAgent(random_agent_symbol, domain, task)
     agents = [random_agent, learning_agent]
+
+    if learning_agent_first:
+        agents = [learning_agent, random_agent]
 
     stops = 0
     for i in range(0, evaluation_period * num_stops):
@@ -137,9 +203,10 @@ def train_agent(evaluation_period, num_stops):
                     match_ended = True
                     final_state = domain.current_state()
                     domain.reset()
-                    for other_agent in unseen_agents:
-                        other_agent.see_result(final_state)
-                        other_agent.prepare_for_new_episode(domain.current_state())
+
+                    for all_agent in agents:
+                        all_agent.see_result(final_state)
+                        all_agent.prepare_for_new_episode(domain.current_state())
 
                     break
 

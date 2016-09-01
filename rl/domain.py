@@ -1,4 +1,4 @@
-from action import Action
+from rl.action import Action
 
 
 class Domain():

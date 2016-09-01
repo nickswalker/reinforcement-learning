@@ -4,19 +4,20 @@ from copy import deepcopy
 from tic_tac_toe import TicTacToeAgent, TicTacToeState, TicTacToeAction, State, Action
 
 
-class LearningAgent(TicTacToeAgent):
+class BacktraceAgent(TicTacToeAgent):
     def __init__(self, symbol: str, world, task, alpha=0.2, epsilon=0.1,
-                 initial_value=0.5, update_exploratory=False, random_tie_breaking=False):
+                 initial_value=0.5, lamb=0.0, update_exploratory=False):
         super().__init__(symbol, world, task)
-        self.random_tie_breaking = random_tie_breaking
-        self.update_exploratory = update_exploratory
         self.table = {}
+        self.update_exploratory = update_exploratory
         self.alpha = alpha
         self.epsilon = epsilon
+        self.lamb = lamb
         self.initial_value = initial_value
         self.previous_state = world.current_state()
         self.previous_move = None
         self.was_exploratory = False
+        self.traces = {}
 
     def value_of_state(self, state: State) -> float:
         existing_value = self.table.get(state)
@@ -57,44 +58,31 @@ class LearningAgent(TicTacToeAgent):
             self.previous_state = state
             self.previous_move = self.state_for_action(state, choice[0],
                                                        choice[1])
-
-            if self.update_exploratory:
-                self.update_value(self.previous_state, state)
-                self.previous_state = state
-
-                if self.previous_move is not None:
-                    self.update_value(self.previous_move, state)
-                self.previous_move = self.state_for_action(state, choice[0],
-                                                           choice[1])
             return TicTacToeAction(self.symbol, choice[0], choice[1])
         else:
             self.was_exploratory = False
 
-        max_options = {}
+        max_option = None
         max_value = float("-inf")
         for option in options:
             value = self.value_of_action_in_state(state, option[0], option[1])
             if value > max_value:
                 max_value = value
-                max_options = [option]
-            elif value == max_value:
-                max_options.append(option)
+                max_option = option
 
-        assert max_options[0] is not None
+        assert max_option is not None
 
-        if self.random_tie_breaking:
-            max_option = random.choice(max_options)
-        else:
-            max_option = max_options[0]
-
-
-        self.update_value(self.previous_state, state)
-        self.previous_state = state
+        self.update_traces(state)
 
         if self.previous_move is not None:
-            self.update_value(self.previous_move, state)
+            self.traces[self.previous_move] = 1.0
+
+        self.update_value(self.previous_state, state)
+
+        # This is the state the agent ends up in after taking the action
         self.previous_move = self.state_for_action(state, max_option[0],
                                                    max_option[1])
+        self.previous_state = state
 
         return TicTacToeAction(self.symbol, max_option[0], max_option[1])
 
@@ -105,14 +93,25 @@ class LearningAgent(TicTacToeAgent):
         prime_value = self.value_of_state(state_prime)
 
         error = prime_value - prev_value
-        self.table[state] = prev_value + self.alpha * error
+
+        for (key, trace_value) in self.traces.items():
+            old_value = self.table[state]
+            update = trace_value * self.alpha * error
+            self.table[state] = old_value + update
 
     def prepare_for_new_episode(self, state):
         self.previous_state = state
+        self.traces = {}
 
     def see_result(self, state: State):
         assert state != self.previous_state
+        self.update_traces(state)
+        self.traces[self.previous_move] = 1.0
         self.update_value(self.previous_state, state)
-        self.update_value(self.previous_move, state)
-        self.previous_state = None
-        self.previous_move = None
+
+    def update_traces(self, state):
+        # decay
+        for (key, value) in self.traces.items():
+            self.traces[key] *= self.lamb
+        # replacing trace
+        self.traces[state] = 1.0
