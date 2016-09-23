@@ -2,7 +2,7 @@ import sys
 
 import numpy as np
 
-from plotting import Plot
+from tic_tac_toe_plotting import Plot
 
 
 def main():

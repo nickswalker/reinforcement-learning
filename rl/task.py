@@ -1,6 +1,6 @@
 class Task(object):
-    def __init__(self):
-        pass
+    def __init__(self, domain: Domain):
+        self.domain = domain
 
     def stateisfinal(self, state):
         raise NotImplementedError("Should have implemented this")
