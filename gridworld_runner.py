@@ -129,14 +129,12 @@ def train_agent(evaluation_period, num_stops, initial_value=0.5,
             return
         terminated = False
         while not terminated:
-
-            action = agent.choose_action(domain.current_state())
-            domain.apply_action(action)
+            agent.act()
             # print(domain.current_state())
             if task.stateisfinal(domain.current_state()):
                 match_ended = True
                 final_state = domain.current_state()
-                agent.
+
                 domain.reset()
                 break
 

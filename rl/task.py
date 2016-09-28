@@ -1,3 +1,6 @@
+from rl.domain import Domain
+
+
 class Task(object):
     def __init__(self, domain: Domain):
         self.domain = domain

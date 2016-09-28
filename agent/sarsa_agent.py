@@ -1,5 +1,6 @@
 import random
 
+from agent.StateActionValue import StateActionValueTable
 from rl.action import Action
 from rl.agent import Agent
 from rl.domain import Domain
@@ -22,10 +23,10 @@ class SarsaAgent(Agent):
         self.previousaction = None
         self.previousstate = None
 
-        self.state_action_value_table = []
+        self.state_action_value_table = StateActionValueTable()
         self.current_cumulative_reward = 0.0
 
-    def act(self, maximize=None):
+    def act(self):
         """Execute one action on the world, possibly terminating the episode.
 
         """
@@ -35,26 +36,32 @@ class SarsaAgent(Agent):
         self.world.apply_action(action)
 
         state_prime = self.world.get_current_state()
+
         # For the first time step, we won't have received a reward yet.
         # We're just notifying the learner of our starting state and action.
         if self.previousstate is None and self.previousaction is None:
-
+            ()
         else:
             reward = self.task.reward(state, action, state_prime)
-            old_value = self.state_action_value_table[state][action]
+            old_value = self.state_action_value_table.actionvalue(state, action)
+
+            expectation = self.expected_value(state_prime)
+
+            error = reward + self.gamma * expectation - old_value
+            new_value = old_value + self.alpha * error
+            self.state_action_value_table.setactionvalue(state, action, new_value)
 
         self.previousaction = action
         self.previousstate = state
 
         if self.task.stateisfinal(state_prime):
             reward = self.task.reward(self.previousstate, self.previousaction, state_prime)
-            self.learner.end(reward)
-            self.episode_reward += reward
+            self.current_cumulative_reward += reward
             # Reset episode related information
             self.previousaction = None
             self.previousstate = None
 
-    def chooseaction(self, state):
+    def chooseaction(self, state) -> Action:
         """Given a state, pick an action according to an epsilon-greedy policy.
 
         :param state: The state from which to act.
@@ -63,27 +70,33 @@ class SarsaAgent(Agent):
         if random.random() < self.epsilon:
             actions = self.domain.get_actions(state)
             return random.sample(actions)
+        else:
+            best_actions = self.state_action_value_table.bestactions(state)
+            return random.sample(best_actions)
 
-        return Action(optimal_params[0], optimal_params[1])
+    def expected_value(self, state):
+        actions = self.domain.get_actions(state)
+        expectation = 0.0
+        best_actions = self.state_action_value_table.bestactions(state)
+        num_best_actions = len(best_actions)
+        nonoptimal_mass = self.epsilon
 
-    def _learn(self, state_prime, action_prime):
-        """Wraps the learning method of TD-lambda.
+        if num_best_actions > 0:
+            a_best_action = best_actions[0]
+            greedy_mass = (1.0 - self.epsilon)
+            expectation += greedy_mass * self.state_action_value_table.actionvalue(state, a_best_action)
+        else:
+            nonoptimal_mass = 1.0
 
-        :param state_prime:
-        :param action_prime:
-        """
-        state = self.previousstate
-        action = self.previousaction
-        reward = self.task.reward(state, action, state_prime)
+        nonoptimal_actions = actions.difference(best_actions)
 
-        # We handle terminal rewards separately, so the reward here should
-        # always be negative.
-        assert reward < 0
+        # No best action, equiprobable random policy
+        total_value = 0.0
+        for action in nonoptimal_actions:
+            total_value += self.state_action_value_table.actionvalue(state, action)
+        expectation = nonoptimal_mass * total_value / len(actions)
 
-        # The learner is smart; it keeps copies of the previous states and
-        # actions. We don't need to pass them in.
-        self.learner.step(reward, self._compose(state_prime, action_prime))
-        self.episode_reward += reward
+        return expectation
 
     def get_cumulative_reward(self):
         return self.current_cumulative_reward
