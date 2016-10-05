@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import List, Set
 
 from rl.action import Action
 from rl.domain import Domain
@@ -12,6 +13,9 @@ class Direction(Enum):
     down = 2
     left = 3
 
+    def __int__(self):
+        return self.value
+
 
 class GridItem(Enum):
     empty = 0
@@ -20,7 +24,7 @@ class GridItem(Enum):
 
 
 class GridWorldState(State):
-    def __init__(self, x: int, y: int, map: list[list[int]]):
+    def __init__(self, x: int, y: int, map: List[List[int]]):
         self.x = x
         self.y = y
         self.map = map
@@ -43,6 +47,15 @@ class GridWorldAction(Action):
         super().__init__()
         self.direction = direction
 
+    def __hash__(self):
+        return self.direction.__hash__()
+
+    def __eq__(self, other):
+        # Assumes two states have the same map!
+        if isinstance(other, GridWorldAction):
+            return other.__hash__() == self.__hash__()
+        return False
+
 
 class GridWorld(Domain):
     def __init__(self, width: int, height: int):
@@ -53,6 +66,10 @@ class GridWorld(Domain):
         self.agent_y = 0
         self.actions = [GridWorldAction(Direction.up), GridWorldAction(Direction.right),
                         GridWorldAction(Direction.down), GridWorldAction(Direction.left)]
+
+    def get_actions(self, state: State) -> Set[Action]:
+        return {GridWorldAction(Direction.up), GridWorldAction(Direction.right), GridWorldAction(Direction.down),
+                GridWorldAction(Direction.left)}
 
     def apply_action(self, action: Action):
         assert isinstance(action, GridWorldAction)
@@ -77,7 +94,7 @@ class GridWorld(Domain):
         if self.agent_y >= self.height:
             self.agent_y = self.height - 1
 
-    def current_state(self):
+    def get_current_state(self) -> GridWorldState:
         return GridWorldState(self.agent_x, self.agent_y, self.map)
 
     def reset(self):
