@@ -3,13 +3,14 @@ import sys
 
 import numpy as np
 import scipy as scipy
+import scipy.stats
 
 from agent.sarsa_agent import SarsaAgent
-from gridworld import ReachExit, GridWorld
+from gridworld import ReachExit, GridWorld, GridItem
 
 evaluation_period = 100
 evaluation_trials = 100
-significance_level = 0.10
+significance_level = 0.05
 
 
 def main():
@@ -18,10 +19,9 @@ def main():
     experiment_num = int(sys.argv[3])
 
     def save(name, results):
-        data = []
-        for entry in results:
-            data.append(entry)
-        np.savetxt("results/n" + str(num_trials) + "_" + name + ".csv", data, delimiter=",")
+        data = np.c_[results]
+        np.savetxt("results/n" + str(num_trials) + "_" + name + ".csv", data, fmt=["%d", "%f", "%f", "%f"],
+                   delimiter=",")
 
     if experiment_num == 0:
         book_results = run_evaluations(num_trials, num_evaluations)
@@ -91,16 +91,19 @@ def evaluate(table) -> float:
     cumulative_rewards = []
     for i in range(0, evaluation_trials):
         terminated = False
+        max_steps = 200
+        current_step = 0
         while not terminated:
+            current_step += 1
             agent.act()
 
-            if task.stateisfinal(domain.get_current_state()):
+            if task.stateisfinal(domain.get_current_state()) or current_step > max_steps:
                 terminated = True
                 domain.reset()
                 cumulative_rewards.append(agent.get_cumulative_reward())
                 agent.episode_ended(domain.get_current_state())
 
-    return scipy.stats.mean(cumulative_rewards)
+    return np.mean(cumulative_rewards)
 
 
 def train_agent(evaluation_period, num_stops, initial_value=0.5,
@@ -138,8 +141,6 @@ def train_agent(evaluation_period, num_stops, initial_value=0.5,
                 match_ended = True
                 final_state = domain.get_current_state()
 
-                domain.reset()
-                break
 
 
 if __name__ == '__main__':
