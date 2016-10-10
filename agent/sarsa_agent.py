@@ -8,7 +8,7 @@ from rl.task import Task
 
 
 class SarsaAgent(Agent):
-    def __init__(self, domain: Domain, task: Task, epsilon=0.05, alpha=0.3, gamma=0.5, lamb=0.4):
+    def __init__(self, domain: Domain, task: Task, epsilon=0.1, alpha=0.6, gamma=0.95, lamb=0.95):
         """
         :param domain: The world the agent is placed in.
         :param task: The task in the world, which defines the reward function.
@@ -69,7 +69,7 @@ class SarsaAgent(Agent):
         """
         if random.random() < self.epsilon:
             actions = self.domain.get_actions(state)
-            return random.sample(actions)
+            return random.sample(actions, 1)[0]
         else:
             best_actions = self.state_action_value_table.bestactions(state)
             return random.sample(best_actions, 1)[0]
@@ -88,13 +88,12 @@ class SarsaAgent(Agent):
         else:
             nonoptimal_mass = 1.0
 
-        nonoptimal_actions = actions.difference(best_actions)
-
-        # No best action, equiprobable random policy
-        total_value = 0.0
-        for action in nonoptimal_actions:
-            total_value += self.state_action_value_table.actionvalue(state, action)
-        expectation = nonoptimal_mass * total_value / len(actions)
+        if nonoptimal_mass > 0.0:
+            # No best action, equiprobable random policy
+            total_value = 0.0
+            for action in actions:
+                total_value += self.state_action_value_table.actionvalue(state, action)
+            expectation += nonoptimal_mass * total_value / len(actions)
 
         return expectation
 

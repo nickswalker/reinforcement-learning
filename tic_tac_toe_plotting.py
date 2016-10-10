@@ -1,16 +1,12 @@
-import matplotlib
 from matplotlib import pyplot as pp
 from matplotlib.backends.backend_pdf import PdfPages
 
-matplotlib.rcParams['mathtext.fontset'] = 'stix'
-matplotlib.rcParams['font.family'] = 'STIXGeneral'
-
 class Plot:
-    def __init__(self, title):
+    def __init__(self, title: str, x_label: str, y_label: str):
         self.ax = pp.axes()
         self.ax.set_title(title, fontsize=14, fontweight='bold')
-        self.ax.set_xlabel('Games spent learning')
-        self.ax.set_ylabel('Percentage win or draw')
+        self.ax.set_xlabel(x_label)
+        self.ax.set_ylabel(y_label)
         self.markers = {"s", "o", "D", "^", "8", "h"}
 
     def plot_evaluations(self, series, evaluations, variances, confidences,

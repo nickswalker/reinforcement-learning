@@ -16,6 +16,16 @@ class Direction(Enum):
     def __int__(self):
         return self.value
 
+    def __str__(self):
+        if self == Direction.Up:
+            return "up"
+        elif self == Direction.Right:
+            return "right"
+        elif self == Direction.Bottom:
+            return "bottom"
+        elif self == Direction.Left:
+            return "left"
+
 
 class GridItem(Enum):
     empty = 0
@@ -39,7 +49,22 @@ class GridWorldState(State):
         return False
 
     def __str__(self):
-        return str(self.x) + str(self.y)
+        result = "_" * len(self.map[0]) * 3
+        result += "\n"
+        for y in range(0, len(self.map)):
+            for x in range(0, len(self.map[0])):
+                item = self.map[y][x]
+                if x == self.x and y == self.y:
+                    result += "A"
+                elif item == GridItem.empty:
+                    result += " "
+                elif item == GridItem.exit:
+                    result += "X"
+                result += " | "
+            result += "\n"
+        result += "_" * len(self.map[0]) * 3
+        result += "\n"
+        return result
 
 
 class GridWorldAction(Action):
@@ -55,6 +80,9 @@ class GridWorldAction(Action):
         if isinstance(other, GridWorldAction):
             return other.__hash__() == self.__hash__()
         return False
+
+    def __str__(self):
+        return self.direction.__str__()
 
 
 class GridWorld(Domain):
@@ -98,7 +126,8 @@ class GridWorld(Domain):
         return GridWorldState(self.agent_x, self.agent_y, self.map)
 
     def reset(self):
-        self.map = [[None] * self.width for _ in range(0, self.height)]
+        self.agent_x = 0
+        self.agent_y = 0
 
 
 class ReachExit(Task):
