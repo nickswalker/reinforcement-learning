@@ -18,7 +18,9 @@ def main():
     experiment_num = int(sys.argv[3])
 
     def save(name, results):
-        data = [*results]
+        data = []
+        for entry in results:
+            data.append(entry)
         np.savetxt("results/n" + str(num_trials) + "_" + name + ".csv", data, delimiter=",")
 
     if experiment_num == 0:
