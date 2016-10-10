@@ -8,7 +8,7 @@ import scipy.stats
 from agent.sarsa_agent import SarsaAgent
 from gridworld import ReachExit, GridWorld, GridItem
 
-evaluation_period = 1000
+evaluation_period = 100
 evaluation_trials = 100
 significance_level = 0.05
 
@@ -81,7 +81,6 @@ def run_evaluations(num_trials, num_evaluations,
 
 def evaluate(table) -> float:
     domain = GridWorld(10, 10)
-    domain.map[9][9] = GridItem.exit
     task = ReachExit(domain)
     agent = SarsaAgent(domain, task)
     agent.table = table
@@ -119,7 +118,6 @@ def train_agent(evaluation_period, num_stops, initial_value=0.5,
     :return:
     """
     domain = GridWorld(10, 10)
-    domain.map[9][9] = GridItem.exit
 
     task = ReachExit(domain)
 
