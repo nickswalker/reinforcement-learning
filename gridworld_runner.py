@@ -7,7 +7,7 @@ import scipy as scipy
 from agent.sarsa_agent import SarsaAgent
 from gridworld import ReachExit, GridWorld
 
-evaluation_period = 1200
+evaluation_period = 100
 evaluation_trials = 100
 significance_level = 0.10
 
@@ -81,6 +81,7 @@ def run_evaluations(num_trials, num_evaluations,
 
 def evaluate(table) -> float:
     domain = GridWorld(10, 10)
+    domain.place_exit(9, 9)
     task = ReachExit(domain)
     agent = SarsaAgent(domain, task)
     agent.table = table
@@ -97,7 +98,7 @@ def evaluate(table) -> float:
                 terminated = True
                 domain.reset()
                 cumulative_rewards.append(agent.get_cumulative_reward())
-                agent.episode_ended(domain.current_state())
+                agent.episode_ended(domain.get_current_state())
 
     return scipy.stats.mean(cumulative_rewards)
 
@@ -115,7 +116,7 @@ def train_agent(evaluation_period, num_stops, initial_value=0.5,
     :return:
     """
     domain = GridWorld(10, 10)
-
+    domain.place_exit(9, 9)
     task = ReachExit(domain)
 
     agent = SarsaAgent(domain, task, epsilon=epsilon, alpha=alpha)
@@ -133,12 +134,13 @@ def train_agent(evaluation_period, num_stops, initial_value=0.5,
         while not terminated:
             agent.act()
             # print(domain.current_state())
-            if task.stateisfinal(domain.current_state()):
+            if task.stateisfinal(domain.get_current_state()):
                 match_ended = True
-                final_state = domain.current_state()
+                final_state = domain.get_current_state()
 
                 domain.reset()
                 break
 
 
-main()
+if __name__ == '__main__':
+    main()

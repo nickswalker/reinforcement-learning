@@ -1,6 +1,7 @@
 import random
 
-from agent.StateActionValue import StateActionValueTable
+from agent.state_action_value_table import StateActionValueTable
+from gridworld import GridWorldState, GridWorldAction, Direction
 from rl.action import Action
 from rl.agent import Agent
 from rl.domain import Domain
@@ -69,7 +70,7 @@ class SarsaAgent(Agent):
         """
         if random.random() < self.epsilon:
             actions = self.domain.get_actions(state)
-            return random.sample(actions)
+            return random.sample(actions, 1)[0]
         else:
             best_actions = self.state_action_value_table.bestactions(state)
             return random.sample(best_actions, 1)[0]
@@ -109,3 +110,13 @@ class SarsaAgent(Agent):
 
     def logepisode(self):
         print("Episode reward: " + str(self.current_cumulative_reward))
+
+    def _log_table(self):
+        result = ""
+        action = GridWorldAction(Direction.up)
+        for x in range(0, len(self.domain.map[0])):
+            for y in range(0, len(self.domain.map)):
+                test_state = GridWorldState(x, y, self.domain.map)
+                result += "%.2f " % self.state_action_value_table.actionvalue(test_state, action)
+            result += "\n"
+        return result

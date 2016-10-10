@@ -98,7 +98,11 @@ class GridWorld(Domain):
         return GridWorldState(self.agent_x, self.agent_y, self.map)
 
     def reset(self):
-        self.map = [[None] * self.width for _ in range(0, self.height)]
+        self.agent_x = 0
+        self.agent_y = 0
+
+    def place_exit(self, x: int, y: int):
+        self.map[y][x] = GridItem.exit
 
 
 class ReachExit(Task):
