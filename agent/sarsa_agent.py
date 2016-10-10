@@ -13,7 +13,7 @@ class SarsaAgent(Agent):
         :param domain: The world the agent is placed in.
         :param task: The task in the world, which defines the reward function.
         """
-        super.__init__(domain, task)
+        super().__init__(domain, task)
         self.world = domain
         self.task = task
         self.epsilon = epsilon
@@ -23,7 +23,7 @@ class SarsaAgent(Agent):
         self.previousaction = None
         self.previousstate = None
 
-        self.state_action_value_table = StateActionValueTable()
+        self.state_action_value_table = StateActionValueTable(domain.get_actions(domain.get_current_state()))
         self.current_cumulative_reward = 0.0
 
     def act(self):
@@ -72,7 +72,7 @@ class SarsaAgent(Agent):
             return random.sample(actions)
         else:
             best_actions = self.state_action_value_table.bestactions(state)
-            return random.sample(best_actions)
+            return random.sample(best_actions, 1)[0]
 
     def expected_value(self, state):
         actions = self.domain.get_actions(state)
@@ -82,7 +82,7 @@ class SarsaAgent(Agent):
         nonoptimal_mass = self.epsilon
 
         if num_best_actions > 0:
-            a_best_action = best_actions[0]
+            a_best_action = random.sample(best_actions, 1)[0]
             greedy_mass = (1.0 - self.epsilon)
             expectation += greedy_mass * self.state_action_value_table.actionvalue(state, a_best_action)
         else:

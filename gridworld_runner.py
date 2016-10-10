@@ -93,7 +93,7 @@ def evaluate(table) -> float:
         while not terminated:
             agent.act()
 
-            if task.stateisfinal(domain.current_state()):
+            if task.stateisfinal(domain.get_current_state()):
                 terminated = True
                 domain.reset()
                 cumulative_rewards.append(agent.get_cumulative_reward())

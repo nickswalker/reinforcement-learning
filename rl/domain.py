@@ -1,8 +1,10 @@
+from typing import Set
+
 from rl.action import Action
 from rl.state import State
 
 class Domain():
-    def get_actions(self, state: State) -> set[Action]:
+    def get_actions(self, state: State) -> Set[Action]:
         raise NotImplementedError("Should have implemented this")
 
     def apply_action(self, action: Action):
