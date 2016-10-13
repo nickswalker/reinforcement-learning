@@ -5,18 +5,18 @@ import numpy as np
 import scipy as scipy
 import scipy.stats
 
+from agent.gradient_descent_sarsa import TrueOnlineSarsaLambda
 from agent.sarsa_agent import SarsaAgent
-from gridworld import ReachExit, GridWorld, GridItem
+from gridworld import ReachExit, GridWorld
 
-evaluation_period = 100
-evaluation_trials = 100
+evaluation_period = 50
 significance_level = 0.05
 
 
 def main():
-    num_evaluations = int(sys.argv[1])
-    num_trials = int(sys.argv[2])
-    experiment_num = int(sys.argv[3])
+    experiment_num = int(sys.argv[1])
+    num_evaluations = int(sys.argv[2])
+    num_trials = int(sys.argv[3])
 
     def save(name, results):
         data = np.c_[results]
@@ -24,15 +24,24 @@ def main():
                    delimiter=",")
 
     if experiment_num == 0:
-        book_results = run_evaluations(num_trials, num_evaluations)
-        save("standard", book_results)
+        standard_results = run_experiment(num_trials, num_evaluations)
+        save("standard", standard_results)
+    if experiment_num == 1:
+        expected_results = run_experiment(num_trials, num_evaluations, expected=True)
+        save("expected", expected_results)
+    if experiment_num == 2:
+        approximation_results = run_experiment(num_trials, num_evaluations, approximation=True)
+    if experiment_num == 3:
+        true_online_results = run_experiment(num_trials, num_evaluations, true_online=True)
 
 
-def run_evaluations(num_trials, num_evaluations,
-                    initial_value=0.5,
-                    epsilon=0.1,
-                    alpha=0.2,
-                    ):
+def run_experiment(num_trials, num_evaluations,
+                   initial_value=0.5,
+                   epsilon=0.1,
+                   alpha=0.2,
+                   expected=False,
+                   true_online=True
+                   ):
     assert num_trials > 1
     evaluations_mean = []
     evaluations_variance = []
@@ -46,8 +55,10 @@ def run_evaluations(num_trials, num_evaluations,
                                                  num_evaluations,
                                                  initial_value=initial_value,
                                                  epsilon=epsilon,
-                                                 alpha=alpha):
-            evaluation = evaluate(table)
+                                                 alpha=alpha,
+                                                 expected=expected,
+                                                 true_online=true_online):
+            evaluation = evaluate(table, true_online=true_online)
             mean = None
             variance = None
             if j > len(evaluations_mean) - 1:
@@ -79,36 +90,40 @@ def run_evaluations(num_trials, num_evaluations,
     return series, evaluations_mean, evaluations_variance, confidences
 
 
-def evaluate(table) -> float:
+def evaluate(table, true_online=False) -> float:
     domain = GridWorld(10, 10)
     domain.place_exit(9, 9)
     task = ReachExit(domain)
+    if true_online:
+        agent = TrueOnlineSarsaLambda(domain, task, epsilon=0.0, alpha=0.0)
+    else:
+        agent = SarsaAgent(domain, task, epsilon=0.0, alpha=0.0)
+    agent.value_function = table
+
+
     agent = SarsaAgent(domain, task)
-    agent.table = table
-    agent.epsilon = 0.0
-    agent.alpha = 0.0
 
     cumulative_rewards = []
-    for i in range(0, evaluation_trials):
-        terminated = False
-        max_steps = 200
-        current_step = 0
-        while not terminated:
-            current_step += 1
-            agent.act()
+    terminated = False
+    max_steps = 200
+    current_step = 0
+    while not terminated:
+        current_step += 1
+        agent.act()
 
-            if task.stateisfinal(domain.get_current_state()) or current_step > max_steps:
-                terminated = True
-                domain.reset()
-                cumulative_rewards.append(agent.get_cumulative_reward())
-                agent.episode_ended(domain.get_current_state())
+        if task.stateisfinal(domain.get_current_state()) or current_step > max_steps:
+            terminated = True
+            domain.reset()
+            cumulative_rewards.append(agent.get_cumulative_reward())
+            agent.episode_ended(domain.get_current_state())
 
     return np.mean(cumulative_rewards)
 
 
 def train_agent(evaluation_period, num_stops, initial_value=0.5,
                 epsilon=0.1,
-                alpha=0.2):
+                alpha=0.2,
+                expected=False, true_online=False):
     """
     Trains an agent, periodically yielding the agent's q-table
     :param evaluation_period:
@@ -122,14 +137,17 @@ def train_agent(evaluation_period, num_stops, initial_value=0.5,
     domain.place_exit(9, 9)
     task = ReachExit(domain)
 
-    agent = SarsaAgent(domain, task, epsilon=epsilon, alpha=alpha)
+    if true_online:
+        agent = TrueOnlineSarsaLambda(domain, task, expected)
+    else:
+        agent = SarsaAgent(domain, task, epsilon=epsilon, alpha=alpha, expected=expected)
 
     stops = 0
     for i in range(0, evaluation_period * num_stops):
         if i % evaluation_period is 0:
             print(i)
             stops += 1
-            yield i, copy.deepcopy(agent.state_action_value_table)
+            yield i, copy.deepcopy(agent.value_function)
 
         if num_stops == stops:
             return
@@ -138,8 +156,9 @@ def train_agent(evaluation_period, num_stops, initial_value=0.5,
             agent.act()
             # print(domain.current_state())
             if task.stateisfinal(domain.get_current_state()):
-                match_ended = True
                 final_state = domain.get_current_state()
+                domain.reset()
+                terminated = True
 
 
 

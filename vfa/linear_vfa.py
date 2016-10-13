@@ -1,9 +1,18 @@
+from typing import List, Set
+
+import numpy as np
+
+from gridworld.feature_extractors import FeatureExtractor
+from rl.action import Action
+from rl.state import State
+
+
 class LinearVFA:
     def __init__(self, num_features, actions: List[Action], per_action_vfa=True, initial_value=0.0):
         self.num_features = num_features
         self.per_action_vfa = per_action_vfa
         self.actions = actions
-        self.weights_per_action = []
+        self.weights_per_action = dict()
         self.weights = None
         self.reset(initial_value)
 
@@ -15,25 +24,35 @@ class LinearVFA:
             weights = [value for _ in range(0, self.num_features)]
 
     def actionvalue(self, features: List[float], action: Action) -> float:
-        weights = None
-        if self.per_action_vfa:
-            weights = self.weights_per_action[]
-        else:
-            weights = self.weights
-
-        return np.dot(weights, features)
+        return np.dot(self.weightsfor(action), features)
 
     def statevalue(self, features: List[float]):
         raise Exception()
 
-    def bestactions(self, features: List[float]) -> set[Action]:
+    def bestactions(self, state: State, extractor: FeatureExtractor) -> Set[Action]:
         best_actions = []
         best_value = float("-inf")
         for action in self.actions:
-            value = self.actionvalue(features, action)
+            state_features = extractor.extract(state, action)
+            value = self.actionvalue(state_features, action)
             if value > best_value:
+                best_value = value
                 best_actions = [action]
             elif value == best_value:
                 best_actions.append(action)
 
         return best_actions
+
+    def weightsfor(self, action: Action):
+        if self.per_action_vfa:
+            weights = self.weights_per_action[action]
+        else:
+            weights = self.weights
+        return weights
+
+    def updateweightsfor(self, weights: List[float], action: Action):
+        if self.per_action_vfa:
+            self.weights_per_action[action] = weights
+        else:
+            assert len(weights) == len(self.weights)
+            self.weights = weights

@@ -17,13 +17,13 @@ class Direction(Enum):
         return self.value
 
     def __str__(self):
-        if self == Direction.Up:
+        if self == Direction.up:
             return "up"
-        elif self == Direction.Right:
+        elif self == Direction.right:
             return "right"
-        elif self == Direction.Bottom:
+        elif self == Direction.bottom:
             return "bottom"
-        elif self == Direction.Left:
+        elif self == Direction.left:
             return "left"
 
 
