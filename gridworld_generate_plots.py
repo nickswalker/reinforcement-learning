@@ -7,7 +7,7 @@ from tic_tac_toe_plotting import Plot
 
 def main():
     figure_num = int(sys.argv[1])
-    n = 500
+    n = 2
     plot = Plot('Performance over time, n=' + str(n) + ' p=' + str(0.1), "Steps", "Reward")
 
     def plot_experiment(name, n):

@@ -44,6 +44,8 @@
 	%----------------------------------------------------------------------------------------
 
 	\section{Motivation}
+	
+	We have covered numerous extensions to the fundamental TD approach. I applied 
 
 
 
@@ -54,15 +56,15 @@
 	\section{Introduction}
 
 	\subsection{Problem}
-
-
-	\[ r(s,a,s')  \left\{
-	\begin{array}{ll}
-		50 & \text{if photocell activated} \\
-		-2 & \text{if LED activated and photocell not activated} \\
-		-1 & \text{otherwise} \\
-	\end{array}
-	\right. \]
+	
+	I chose the stochastic windy gridworld task presented in example 6.5 and subsequent exercises. In this environment, the agent can move in cardinal directions, but for portions of the grid a stochastic wind may push the agent above or below its movement target. The agent receives -1 reward at each time step, except for actions that transition to the goal, which yield +50.
+	
+			\begin{figure}[h]
+				\begin{center}
+					\includegraphics[width=\textwidth]{gridworld.png}
+					\caption{.}
+				\end{center}
+			\end{figure}
 
 
 	\subsection{Learning Approaches}

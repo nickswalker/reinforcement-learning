@@ -1,7 +1,7 @@
 import random
 
 from agent.state_action_value_table import StateActionValueTable
-from gridworld import GridWorldState, GridWorldAction, Direction
+from gridworld import GridWorldState, GridWorldAction, Direction, Set
 from rl.action import Action
 from rl.agent import Agent
 from rl.domain import Domain
@@ -38,8 +38,6 @@ class SarsaAgent(Agent):
 
         self.world.apply_action(action)
 
-
-
         # For the first time step, we won't have received a reward yet.
         # We're just notifying the learner of our starting state and action.
         if self.previousstate is None and self.previousaction is None:
@@ -47,15 +45,13 @@ class SarsaAgent(Agent):
         else:
             self.update(self.previousstate, self.previousaction, state, action)
 
-
         self.previousaction = action
         self.previousstate = state
 
         state_prime = self.world.get_current_state()
         if self.task.stateisfinal(state_prime):
             self.update(state, action, state_prime, None, terminal=True)
-            reward = self.task.reward(state, action, state_prime)
-            # Reset episode related information
+            # Reset some episode related information
             self.previousaction = None
             self.previousstate = None
 
@@ -117,7 +113,7 @@ class SarsaAgent(Agent):
     def get_cumulative_reward(self):
         return self.current_cumulative_reward
 
-    def episode_ended(self, state):
+    def episode_ended(self):
         # Observe final transition if needed
         self.current_cumulative_reward = 0.0
         self.previousaction = None
@@ -126,7 +122,7 @@ class SarsaAgent(Agent):
     def logepisode(self):
         print("Episode reward: " + str(self.current_cumulative_reward))
 
-    def _log_table(self):
+    def _log_table(self) -> str:
         result = ""
         action = GridWorldAction(Direction.up)
         for x in range(0, len(self.domain.map[0])):
@@ -135,3 +131,32 @@ class SarsaAgent(Agent):
                 result += "%.2f " % self.value_function.actionvalue(test_state, action)
             result += "\n"
         return result
+
+    def _log_policy(self) -> str:
+        result = "___________\n"
+        for y in range(0, len(self.domain.map)):
+            result += "|"
+            for x in range(0, len(self.domain.map[0])):
+                test_state = GridWorldState(x, y, self.domain.map)
+                actions = self.value_function.bestactions(test_state)
+                result += " " + self._best_actions_to_str(actions)
+            result += "|\n"
+        result += "------------"
+        return result
+
+    def _best_actions_to_str(self, actions: Set[Action]) -> str:
+        actions = list(actions)
+        if len(actions) == 1:
+            action = actions[0]
+            if action.direction == Direction.up:
+                return "↑"
+            if action.direction == Direction.right:
+                return "→"
+            if action.direction == Direction.down:
+                return "↓"
+            if action.direction == Direction.left:
+                return "←"
+        elif len(actions) == 4:
+            return "*"
+        else:
+            return "."

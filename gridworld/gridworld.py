@@ -1,3 +1,4 @@
+import random
 from enum import Enum
 from typing import List, Set
 
@@ -21,8 +22,8 @@ class Direction(Enum):
             return "up"
         elif self == Direction.right:
             return "right"
-        elif self == Direction.bottom:
-            return "bottom"
+        elif self == Direction.down:
+            return "down"
         elif self == Direction.left:
             return "left"
 
@@ -86,14 +87,21 @@ class GridWorldAction(Action):
 
 
 class GridWorld(Domain):
-    def __init__(self, width: int, height: int):
-        self.map = [[0] * height for _ in range(0, width)]
+    def __init__(self, width: int, height: int, agent_x_start: int, agent_y_start: int, wind=False,
+                 wind_strengths=None):
+        self.map = [[0] * width for _ in range(0, height)]
         self.width = width
         self.height = height
         self.agent_x = 0
         self.agent_y = 0
         self.actions = [GridWorldAction(Direction.up), GridWorldAction(Direction.right),
                         GridWorldAction(Direction.down), GridWorldAction(Direction.left)]
+        self.wind = wind
+        self.wind_strengths = wind_strengths
+        self.agent_start_x = agent_x_start
+        self.agent_start_y = agent_y_start
+        if self.wind:
+            assert len(wind_strengths) == width
 
     def get_actions(self, state: State) -> Set[Action]:
         return {GridWorldAction(Direction.up), GridWorldAction(Direction.right), GridWorldAction(Direction.down),
@@ -101,6 +109,18 @@ class GridWorld(Domain):
 
     def apply_action(self, action: Action):
         assert isinstance(action, GridWorldAction)
+
+        if self.wind:
+            strength = self.wind_strengths[self.agent_x]
+            if strength > 0:
+                die_roll = random.randint(0, 2)
+                if die_roll == 0:
+                    strength -= 1
+                elif die_roll == 1:
+                    strength += 0
+                elif die_roll == 2:
+                    strength += 1
+
         # Move the agent
         if action.direction is Direction.up:
             self.agent_y += 1
@@ -110,6 +130,9 @@ class GridWorld(Domain):
             self.agent_y -= 1
         elif action.direction is Direction.left:
             self.agent_x -= 1
+
+        if self.wind:
+            self.agent_y += strength
 
         # Clamp
         if self.agent_x < 0:
@@ -126,8 +149,8 @@ class GridWorld(Domain):
         return GridWorldState(self.agent_x, self.agent_y, self.map)
 
     def reset(self):
-        self.agent_x = 0
-        self.agent_y = 0
+        self.agent_x = self.agent_start_x
+        self.agent_y = self.agent_start_y
 
     def place_exit(self, x: int, y: int):
         self.map[y][x] = GridItem.exit

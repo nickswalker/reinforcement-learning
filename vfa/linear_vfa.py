@@ -19,9 +19,9 @@ class LinearVFA:
     def reset(self, value=0.0):
         if self.per_action_vfa:
             for action in self.actions:
-                self.weights_per_action[action] = [value for _ in range(0, self.num_features)]
+                self.weights_per_action[action] = np.zeros(self.num_features)
         else:
-            weights = [value for _ in range(0, self.num_features)]
+            self.weights = np.zeros(self.num_features)
 
     def actionvalue(self, features: List[float], action: Action) -> float:
         return np.dot(self.weightsfor(action), features)
@@ -43,14 +43,14 @@ class LinearVFA:
 
         return best_actions
 
-    def weightsfor(self, action: Action):
+    def weightsfor(self, action: Action) -> np.ndarray:
         if self.per_action_vfa:
             weights = self.weights_per_action[action]
         else:
             weights = self.weights
         return weights
 
-    def updateweightsfor(self, weights: List[float], action: Action):
+    def updateweightsfor(self, weights: np.ndarray, action: Action):
         if self.per_action_vfa:
             self.weights_per_action[action] = weights
         else:

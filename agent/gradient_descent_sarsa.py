@@ -33,7 +33,7 @@ class TrueOnlineSarsaLambda(Agent):
         example_state = domain.get_current_state()
         actions = domain.get_actions(example_state)
         self.feature_extractor = DiscretizedGridWorldState(example_state, GridWorldAction(Direction.up))
-        self.eligibility = [0 for _ in range(0, self.feature_extractor.number_of_features)]
+        self.eligibility = np.zeros(self.feature_extractor.number_of_features)
         self.value_function = LinearVFA(self.feature_extractor.number_of_features, actions)
         self.current_cumulative_reward = 0.0
 
@@ -74,6 +74,7 @@ class TrueOnlineSarsaLambda(Agent):
 
         value = np.dot(state_weights, state_features)
 
+        self._update_traces(state_features)
         # Terminal states are defined to have value 0
         if terminal:
             value_prime = 0
@@ -86,20 +87,38 @@ class TrueOnlineSarsaLambda(Agent):
                 state_prime_weights = np.array(self.value_function.weightsfor(action_prime))
                 value_prime = np.dot(state_prime_weights, state_prime_features)
 
-        eligibility_target = (1 - self.alpha * self.gamma * self.lamb * np.dot(self.eligibility,
-                                                                               state_features)) * state_features
-        self.eligibility = self.gamma * self.lamb * np.array(self.eligibility) + np.array(eligibility_target)
+
         delta = reward + self.gamma * value_prime - value
-        weights_target = self.alpha * (delta + value - value_old) * np.array(self.eligibility) - self.alpha * (
-        value - value_old) * np.array(state_features)
+        weights_target = self.alpha * (delta + value - value_old) * self.eligibility - self.alpha * (
+        value - value_old) * state_features
         updated_weights = state_weights + weights_target
 
+        updated_weights = self._clear_weights(updated_weights)
         self.value_function.updateweightsfor(updated_weights, action)
         value_old = self.value_function.actionvalue(state_features, action)
 
         self.current_cumulative_reward += reward
 
+        self._eligibility_clear()
         return value_old
+
+    def _clear_weights(self, weights):
+        for i in range(0, len(weights)):
+            if weights[i] < 0.000001:
+                weights[i] = 0.0
+        return weights
+
+    def _update_traces(self, state_features):
+        discounted_eligibility = self.gamma * self.lamb * self.eligibility
+        eligibility_target = (1 - self.alpha * self.gamma * self.lamb * np.dot(self.eligibility,
+                                                                               state_features)) * state_features
+        self.eligibility = discounted_eligibility + eligibility_target
+
+    def _eligibility_clear(self):
+        for i in range(0, len(self.eligibility)):
+            if self.eligibility[i] < 0.00001:
+                self.eligibility[i] = 0.0
+
 
     def choose_action(self, state) -> Action:
         """Given a state, pick an action according to an epsilon-greedy policy.
