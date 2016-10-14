@@ -50,9 +50,10 @@ class GridWorldState(State):
         return False
 
     def __str__(self):
+        return str(self.x) + ", " + str(self.y)
         result = "_" * len(self.map[0]) * 3
         result += "\n"
-        for y in range(0, len(self.map)):
+        for y in reversed(range(0, len(self.map))):
             for x in range(0, len(self.map[0])):
                 item = self.map[y][x]
                 if x == self.x and y == self.y:
@@ -92,8 +93,8 @@ class GridWorld(Domain):
         self.map = [[0] * width for _ in range(0, height)]
         self.width = width
         self.height = height
-        self.agent_x = 0
-        self.agent_y = 0
+        self.agent_x = agent_x_start
+        self.agent_y = agent_y_start
         self.actions = [GridWorldAction(Direction.up), GridWorldAction(Direction.right),
                         GridWorldAction(Direction.down), GridWorldAction(Direction.left)]
         self.wind = wind
@@ -159,7 +160,8 @@ class GridWorld(Domain):
 class ReachExit(Task):
     def reward(self, state, action, state_prime) -> float:
         if state.x == state_prime.x and state.y == state_prime.y:
-            return -5
+            return -1
+            # return -5
         elif self.domain.map[state_prime.y][state_prime.x] == GridItem.exit:
             return 20
         else:

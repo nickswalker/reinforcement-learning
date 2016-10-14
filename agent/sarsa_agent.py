@@ -54,6 +54,7 @@ class SarsaAgent(Agent):
             # Reset some episode related information
             self.previousaction = None
             self.previousstate = None
+            print(self._log_policy() + " " + str(self.current_cumulative_reward))
 
     def update(self, state: State, action: Action, state_prime: State, action_prime: Action, terminal=False):
         reward = self.task.reward(state, action, state_prime)
@@ -125,8 +126,9 @@ class SarsaAgent(Agent):
     def _log_table(self) -> str:
         result = ""
         action = GridWorldAction(Direction.up)
-        for x in range(0, len(self.domain.map[0])):
-            for y in range(0, len(self.domain.map)):
+        for y in reversed(range(0, len(self.domain.map))):
+            for x in range(0, len(self.domain.map[0])):
+
                 test_state = GridWorldState(x, y, self.domain.map)
                 result += "%.2f " % self.value_function.actionvalue(test_state, action)
             result += "\n"
@@ -134,7 +136,7 @@ class SarsaAgent(Agent):
 
     def _log_policy(self) -> str:
         result = "___________\n"
-        for y in range(0, len(self.domain.map)):
+        for y in reversed(range(0, len(self.domain.map))):
             result += "|"
             for x in range(0, len(self.domain.map[0])):
                 test_state = GridWorldState(x, y, self.domain.map)
@@ -145,9 +147,11 @@ class SarsaAgent(Agent):
         return result
 
     def _best_actions_to_str(self, actions: Set[Action]) -> str:
-        actions = list(actions)
+        actions_list = list(actions)
+        directions_list = [a.direction for a in actions_list]
+        directions = set(directions_list)
         if len(actions) == 1:
-            action = actions[0]
+            action = actions_list[0]
             if action.direction == Direction.up:
                 return "↑"
             if action.direction == Direction.right:
@@ -156,6 +160,13 @@ class SarsaAgent(Agent):
                 return "↓"
             if action.direction == Direction.left:
                 return "←"
+        elif len(actions) == 2:
+            if Direction.left in directions and Direction.right in directions:
+                return "↔"
+            elif Direction.up in directions and Direction.down in directions:
+                return "↕"
+            else:
+                return " "
         elif len(actions) == 4:
             return "*"
         else:

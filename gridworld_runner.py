@@ -10,7 +10,7 @@ from agent.gradient_descent_sarsa import TrueOnlineSarsaLambda
 from agent.sarsa_agent import SarsaAgent
 from gridworld import ReachExit, GridWorld, Task, Domain
 
-evaluation_period = 1000
+evaluation_period = 500
 significance_level = 0.05
 
 
@@ -136,10 +136,13 @@ def train_agent(evaluation_period, num_stops, agent_factory):
         if num_stops == stops:
             return
         terminated = False
+        max_steps = 200
+        current_step = 0
         while not terminated:
+            current_step += 1
             agent.act()
-            # print(domain.current_state())
-            if task.stateisfinal(domain.get_current_state()):
+
+            if task.stateisfinal(domain.get_current_state()) or current_step > max_steps:
                 final_state = domain.get_current_state()
                 agent.episode_ended()
                 domain.reset()
@@ -147,7 +150,8 @@ def train_agent(evaluation_period, num_stops, agent_factory):
 
 
 def configure_gridworld() -> Tuple[Domain, Task]:
-    domain = GridWorld(10, 7, agent_x_start=0, agent_y_start=6)
+    domain = GridWorld(10, 7, agent_x_start=0, agent_y_start=3, wind=True,
+                       wind_strengths=[0, 0, 0, 1, 1, 1, 2, 1, 1, 0])
     domain.place_exit(7, 3)
     task = ReachExit(domain)
     return domain, task
@@ -155,7 +159,7 @@ def configure_gridworld() -> Tuple[Domain, Task]:
 
 def agent_factory(initial_value=0.5,
                   epsilon=0.1,
-                  alpha=0.3,
+                  alpha=0.5,
                   lmbda=0.95,
                   expected=False, true_online=False):
     def generate_agent(domain, task):
