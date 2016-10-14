@@ -38,7 +38,7 @@ class StateActionValueTable:
             if value > best_value:
                 best_value = value
                 best_actions = {action}
-            elif value == best_value:
+            elif value == best_value or abs(value - best_value) < 0.000001:
                 best_actions.add(action)
 
         return best_actions

@@ -34,6 +34,9 @@ class QLearning(Agent):
         state = self.domain.get_current_state()
         action = self.choose_action(state)
 
+        self.previousstate = state
+        self.previousaction = action
+
         self.world.apply_action(action)
         state_prime = self.world.get_current_state()
 

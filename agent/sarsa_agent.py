@@ -51,10 +51,7 @@ class SarsaAgent(Agent):
         state_prime = self.world.get_current_state()
         if self.task.stateisfinal(state_prime):
             self.update(state, action, state_prime, None, terminal=True)
-            # Reset some episode related information
-            self.previousaction = None
-            self.previousstate = None
-            print(self._log_policy() + " " + str(self.current_cumulative_reward))
+            # print(self._log_policy() + " " + str(self.current_cumulative_reward))
 
     def update(self, state: State, action: Action, state_prime: State, action_prime: Action, terminal=False):
         reward = self.task.reward(state, action, state_prime)

@@ -60,10 +60,6 @@ class TrueOnlineSarsaLambda(Agent):
         if self.task.stateisfinal(state_prime):
             self.update(state, action, state_prime, None, self.value_old, terminal=True)
             reward = self.task.reward(state, action, state_prime)
-            self.current_cumulative_reward += reward
-            # Reset episode related information
-            self.previousaction = None
-            self.previousstate = None
 
     def update(self, state: State, action: Action, state_prime: State, action_prime: Action, value_old: float,
                terminal=False):
@@ -72,6 +68,7 @@ class TrueOnlineSarsaLambda(Agent):
         state_weights = np.array(self.value_function.weightsfor(action))
         state_features = np.array(self.feature_extractor.extract(state, action))
 
+        value_prime = np.dot(state_weights, state_features)
         value = np.dot(state_weights, state_features)
 
         self._update_traces(state_features)
@@ -84,16 +81,14 @@ class TrueOnlineSarsaLambda(Agent):
 
             else:
                 state_prime_features = np.array(self.feature_extractor.extract(state_prime, action_prime))
-                state_prime_weights = np.array(self.value_function.weightsfor(action_prime))
-                value_prime = np.dot(state_prime_weights, state_prime_features)
-
+                value_prime = np.dot(state_weights, state_prime_features)
 
         delta = reward + self.gamma * value_prime - value
-        weights_target = self.alpha * (delta + value - value_old) * self.eligibility - self.alpha * (
-        value - value_old) * state_features
+        weights_target = delta * self.eligibility + self.alpha * (
+            value - np.dot(state_weights, state_features)) * state_features
         updated_weights = state_weights + weights_target
 
-        updated_weights = self._clear_weights(updated_weights)
+        # updated_weights = self._clear_weights(updated_weights)
         self.value_function.updateweightsfor(updated_weights, action)
         value_old = self.value_function.actionvalue(state_features, action)
 
@@ -110,7 +105,7 @@ class TrueOnlineSarsaLambda(Agent):
 
     def _update_traces(self, state_features):
         discounted_eligibility = self.gamma * self.lamb * self.eligibility
-        eligibility_target = (1 - self.alpha * self.gamma * self.lamb * np.dot(self.eligibility,
+        eligibility_target = self.alpha * (1 - self.gamma * self.lamb * np.dot(self.eligibility,
                                                                                state_features)) * state_features
         self.eligibility = discounted_eligibility + eligibility_target
 
@@ -118,7 +113,6 @@ class TrueOnlineSarsaLambda(Agent):
         for i in range(0, len(self.eligibility)):
             if self.eligibility[i] < 0.00001:
                 self.eligibility[i] = 0.0
-
 
     def choose_action(self, state) -> Action:
         """Given a state, pick an action according to an epsilon-greedy policy.
@@ -159,7 +153,7 @@ class TrueOnlineSarsaLambda(Agent):
     def get_cumulative_reward(self):
         return self.current_cumulative_reward
 
-    def episode_ended(self, state):
+    def episode_ended(self):
         # Observe final transition if needed
         self.current_cumulative_reward = 0.0
         self.previousaction = None

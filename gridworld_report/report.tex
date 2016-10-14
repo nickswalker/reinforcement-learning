@@ -57,7 +57,7 @@
 
 	\subsection{Problem}
 	
-	I chose the stochastic windy gridworld task presented in example 6.5 and subsequent exercises. In this environment, the agent can move in cardinal directions, but for portions of the grid a stochastic wind may push the agent above or below its movement target. The agent receives -1 reward at each time step, except for actions that transition to the goal, which yield +50.
+	I chose the stochastic windy gridworld task presented in example 6.5 and subsequent exercises. In this environment, the agent can move in cardinal directions, but for portions of the grid a stochastic wind may push the agent above or below its movement target. The agent receives -1 reward at each time step, except for actions that transition to the goal, which yield +20.
 	
 			\begin{figure}[h]
 				\begin{center}
@@ -69,33 +69,6 @@
 
 	\subsection{Learning Approaches}
 
-	\subsubsection{Tabular?}
-
-	\subsubsection{Function Approximation}
-
-
-
-	\begin{equation}\label{eqn:update}
-	\bm{\theta}_{t+1} =
-	\bm{\theta}_t +
-	\alpha \Big[
-		R_{t+1} +
-		\gamma \hat{q}(S_{t+1}, A_{t+1}\, \bm{\theta}_t)
-		- \hat{q}(S_t, A_t, \bm{\theta}_t)
-	\Big]
-	\Delta\hat{q}(S_t, A_t, \bm{\theta}_t)\tag{1}
-	\end{equation}
-
-	And in the linear case:
-
-	\begin{equation}\label{eqn:linear_update}
-		\bm{\theta}_{t+1} =
-		\bm{\theta}_t +
-			\alpha \Big[
-				R_{t+1} + \gamma\, \bm{\theta}_t^\top\bm{\phi}_{t+1} \space
-				- \bm{\theta}_t^\top\bm{\phi}_t
-			\Big]\bm{\phi}_t\tag{2}
-	\end{equation}
 
 
 	%----------------------------------------------------------------------------------------

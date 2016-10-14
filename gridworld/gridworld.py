@@ -89,7 +89,7 @@ class GridWorldAction(Action):
 
 class GridWorld(Domain):
     def __init__(self, width: int, height: int, agent_x_start: int, agent_y_start: int, wind=False,
-                 wind_strengths=None):
+                 wind_strengths=None, stochasticity=1.0):
         self.map = [[0] * width for _ in range(0, height)]
         self.width = width
         self.height = height
@@ -101,6 +101,8 @@ class GridWorld(Domain):
         self.wind_strengths = wind_strengths
         self.agent_start_x = agent_x_start
         self.agent_start_y = agent_y_start
+
+        self.stochasticity = stochasticity
         if self.wind:
             assert len(wind_strengths) == width
 
@@ -114,13 +116,13 @@ class GridWorld(Domain):
         if self.wind:
             strength = self.wind_strengths[self.agent_x]
             if strength > 0:
-                die_roll = random.randint(0, 2)
-                if die_roll == 0:
+                die_roll = random.random() * 3.0
+                if die_roll < 0 + self.stochasticity:
                     strength -= 1
-                elif die_roll == 1:
-                    strength += 0
-                elif die_roll == 2:
+                elif die_roll > 3 - self.stochasticity:
                     strength += 1
+                else:
+                    strength = 0
 
         # Move the agent
         if action.direction is Direction.up:

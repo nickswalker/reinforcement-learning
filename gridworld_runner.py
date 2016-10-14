@@ -9,42 +9,51 @@ import scipy.stats
 from agent.q_learning import QLearning
 from agent.sarsa_agent import SarsaAgent
 from agent.true_online_sarsa_lambda import TrueOnlineSarsaLambda
-from gridworld import ReachExit, GridWorld, Task, Domain
+from gridworld import ReachExit, GridWorld, Task, Domain, Direction
 
 evaluation_period = 50
 significance_level = 0.05
+
+stochasticity = 0.0
 
 
 def main():
     experiment_num = int(sys.argv[1])
     num_evaluations = int(sys.argv[2])
     num_trials = int(sys.argv[3])
+    global stochasticity
+    stochasticity = float(sys.argv[4])
 
     def save(name, results):
         data = np.c_[results]
-        np.savetxt("results/n" + str(num_trials) + "_" + name + ".csv", data, fmt=["%d", "%f", "%f", "%f"],
+        np.savetxt("results/" + str(stochasticity) + "/n" + str(num_trials) + "_" + name + ".csv", data,
+                   fmt=["%d", "%f", "%f", "%f"],
                    delimiter=",")
 
     if experiment_num == 0:
         factory = agent_factory(q_learning=True)
         q_learning_results = run_experiment(num_trials, num_evaluations, factory)
-        save("q-learning", q_learning_results)
+        save("Q-learning", q_learning_results)
     if experiment_num == 1:
         factory = agent_factory()
         standard_results = run_experiment(num_trials, num_evaluations, factory)
-        save("standard", standard_results)
+        save("Sarsa", standard_results)
     if experiment_num == 2:
         factory = agent_factory(expected=True)
         expected_results = run_experiment(num_trials, num_evaluations, factory)
-        save("expected", expected_results)
-    if experiment_num == 3:
-        factory = agent_factory(approximation=True)
-        approximation_results = run_experiment(num_trials, num_evaluations, factory)
+        save("Expected Sarsa", expected_results)
     if experiment_num == 4:
-        factory = agent_factory(true_online=True, lmbda=0.00)
+        factory = agent_factory(true_online=True, lmbda=0.10)
         true_online_results = run_experiment(num_trials, num_evaluations, factory)
+        save("True Online Sarsa λ=0.1", true_online_results)
     if experiment_num == 5:
-        factory = agent_factory(true_online=True, lmbda=0.95)
+        factory = agent_factory(true_online=True, lmbda=0.50)
+        true_online_sarsa_lambda = run_experiment(num_trials, num_evaluations, factory)
+        save("True Online Sarsa λ=0.5", true_online_sarsa_lambda)
+    if experiment_num == 5:
+        factory = agent_factory(true_online=True, lmbda=0.90)
+        true_online_sarsa_lambda = run_experiment(num_trials, num_evaluations, factory)
+        save("True Online Sarsa λ=0.9", true_online_sarsa_lambda)
 
 
 def run_experiment(num_trials, num_evaluations,
@@ -94,27 +103,57 @@ def run_experiment(num_trials, num_evaluations,
     return series, evaluations_mean, evaluations_variance, confidences
 
 
+def plot_trajectory(trajectory):
+    result_grid = trajectory[0][0].map
+    for state, action in trajectory:
+        if action.direction == Direction.up:
+            act_string = "↑"
+        if action.direction == Direction.right:
+            act_string = "→"
+        if action.direction == Direction.down:
+            act_string = "↓"
+        if action.direction == Direction.left:
+            act_string = "←"
+        result_grid[state.y][state.x] = act_string
+
+    result = "___________\n"
+    for y in reversed(range(0, len(result_grid))):
+        result += "|"
+        for x in range(0, len(result_grid[0])):
+            result += " " + str(result_grid[y][x])
+        result += "|\n"
+    result += "------------"
+    return result
+
+
 def evaluate(table, agent_factory) -> float:
     domain, task = configure_gridworld()
     agent = agent_factory(domain, task)
     agent.value_function = table
     agent.epsilon = 0.0
     agent.alpha = 0.0
-    cumulative_rewards = []
+    cumulative_reward = 0.0
     terminated = False
     max_steps = 200
     current_step = 0
+
+    trajectory = []
+
     while not terminated:
         current_step += 1
         agent.act()
 
+        trajectory.append((agent.previousstate, agent.previousaction))
+
         if task.stateisfinal(domain.get_current_state()) or current_step > max_steps:
             terminated = True
             domain.reset()
-            cumulative_rewards.append(agent.get_cumulative_reward())
+            cumulative_reward = agent.get_cumulative_reward()
             agent.episode_ended()
 
-    return np.mean(cumulative_rewards)
+    # print(plot_trajectory(trajectory))
+    print(cumulative_reward)
+    return cumulative_reward
 
 
 def train_agent(evaluation_period, num_stops, agent_factory):
@@ -146,7 +185,7 @@ def train_agent(evaluation_period, num_stops, agent_factory):
             current_step += 1
             agent.act()
 
-            if task.stateisfinal(domain.get_current_state()) or current_step > max_steps:
+            if task.stateisfinal(domain.get_current_state()):
                 final_state = domain.get_current_state()
                 agent.episode_ended()
                 domain.reset()
@@ -155,7 +194,7 @@ def train_agent(evaluation_period, num_stops, agent_factory):
 
 def configure_gridworld() -> Tuple[Domain, Task]:
     domain = GridWorld(10, 7, agent_x_start=0, agent_y_start=3, wind=True,
-                       wind_strengths=[0, 0, 0, 1, 1, 1, 2, 1, 1, 0])
+                       wind_strengths=[0, 0, 0, 1, 1, 1, 2, 1, 1, 0], stochasticity=stochasticity)
     domain.place_exit(7, 3)
     task = ReachExit(domain)
     return domain, task
@@ -163,7 +202,7 @@ def configure_gridworld() -> Tuple[Domain, Task]:
 
 def agent_factory(initial_value=0.5,
                   epsilon=0.1,
-                  alpha=0.5,
+                  alpha=0.2,
                   lmbda=0.95,
                   expected=False, true_online=False, q_learning=False):
     def generate_agent(domain, task):

@@ -7,22 +7,28 @@ from tic_tac_toe_plotting import Plot
 
 def main():
     figure_num = int(sys.argv[1])
-    n = 2
-    plot = Plot('Performance over time, n=' + str(n) + ' p=' + str(0.1), "Steps", "Reward")
+    n = 40
+
+    stoch = (figure_num * 2) / 10.0
+
+    plot = Plot('Performance over time, stochasticity=' + str(stoch), "Episodes",
+                "Reward")
 
     def plot_experiment(name, n):
-        series, evaluations_mean, variances, confidences = np.loadtxt('results/n' + str(n) + '_' + name + '.csv',
-                                                                      delimiter=",", dtype=("int,float,float,float"),
-                                                                      unpack=True)
+        series, evaluations_mean, variances, confidences = np.loadtxt(
+            'results/' + str(stoch) + '/n' + str(n) + '_' + name + '.csv',
+            delimiter=",", dtype=("int,float,float,float"),
+            unpack=True)
         plot.plot_evaluations(series, evaluations_mean, variances, confidences,
                               name)
 
-    if figure_num == 0:
-        plot_experiment("q_learning", n)
-    if figure_num == 1:
-        plot_experiment("standard", n)
-    if figure_num == 2:
-        plot_experiment("expected", n)
+    if figure_num in range(0, 6):
+        plot_experiment("Q-learning", n)
+        plot_experiment("Sarsa", n)
+        plot_experiment("Expected Sarsa", n)
+        plot_experiment("True Online Sarsa λ=0.1", n)
+        plot_experiment("True Online Sarsa λ=0.5", n)
+        plot_experiment("True Online Sarsa λ=0.9", n)
 
     plot.save(figure_num)
 

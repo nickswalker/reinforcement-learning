@@ -23,7 +23,7 @@ class LinearVFA:
         else:
             self.weights = np.zeros(self.num_features)
 
-    def actionvalue(self, features: List[float], action: Action) -> float:
+    def actionvalue(self, features: np.ndarray, action: Action) -> float:
         return np.dot(self.weightsfor(action), features)
 
     def statevalue(self, features: List[float]):
