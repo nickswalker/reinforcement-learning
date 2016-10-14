@@ -18,8 +18,10 @@ def main():
                               name)
 
     if figure_num == 0:
-        plot_experiment("standard", n)
+        plot_experiment("q_learning", n)
     if figure_num == 1:
+        plot_experiment("standard", n)
+    if figure_num == 2:
         plot_experiment("expected", n)
 
     plot.save(figure_num)

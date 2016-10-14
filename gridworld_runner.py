@@ -6,11 +6,12 @@ import numpy as np
 import scipy as scipy
 import scipy.stats
 
-from agent.gradient_descent_sarsa import TrueOnlineSarsaLambda
+from agent.q_learning import QLearning
 from agent.sarsa_agent import SarsaAgent
+from agent.true_online_sarsa_lambda import TrueOnlineSarsaLambda
 from gridworld import ReachExit, GridWorld, Task, Domain
 
-evaluation_period = 500
+evaluation_period = 50
 significance_level = 0.05
 
 
@@ -24,22 +25,25 @@ def main():
         np.savetxt("results/n" + str(num_trials) + "_" + name + ".csv", data, fmt=["%d", "%f", "%f", "%f"],
                    delimiter=",")
 
-
     if experiment_num == 0:
+        factory = agent_factory(q_learning=True)
+        q_learning_results = run_experiment(num_trials, num_evaluations, factory)
+        save("q-learning", q_learning_results)
+    if experiment_num == 1:
         factory = agent_factory()
         standard_results = run_experiment(num_trials, num_evaluations, factory)
         save("standard", standard_results)
-    if experiment_num == 1:
+    if experiment_num == 2:
         factory = agent_factory(expected=True)
         expected_results = run_experiment(num_trials, num_evaluations, factory)
         save("expected", expected_results)
-    if experiment_num == 2:
+    if experiment_num == 3:
         factory = agent_factory(approximation=True)
         approximation_results = run_experiment(num_trials, num_evaluations, factory)
-    if experiment_num == 3:
+    if experiment_num == 4:
         factory = agent_factory(true_online=True, lmbda=0.00)
         true_online_results = run_experiment(num_trials, num_evaluations, factory)
-    if experiment_num == 4:
+    if experiment_num == 5:
         factory = agent_factory(true_online=True, lmbda=0.95)
 
 
@@ -161,10 +165,12 @@ def agent_factory(initial_value=0.5,
                   epsilon=0.1,
                   alpha=0.5,
                   lmbda=0.95,
-                  expected=False, true_online=False):
+                  expected=False, true_online=False, q_learning=False):
     def generate_agent(domain, task):
         if true_online:
             agent = TrueOnlineSarsaLambda(domain, task, expected, lamb=lmbda)
+        elif q_learning:
+            agent = QLearning(domain, task)
         else:
             agent = SarsaAgent(domain, task, epsilon=epsilon, alpha=alpha, expected=expected)
         return agent
