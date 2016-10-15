@@ -20,8 +20,9 @@ def main():
                 'results/' + str(stoch) + '/n' + str(n) + '_' + name + '.csv',
                 delimiter=",", dtype=("int,float,float,float"),
                 unpack=True)
+            clean_name = name.replace("λ", "Lambda")
             plot.plot_evaluations(series, evaluations_mean, variances, confidences,
-                                  name)
+                                  clean_name)
         except Exception:
             pass
 
@@ -32,6 +33,19 @@ def main():
         plot_experiment("True Online Sarsa λ=0.1", n)
         plot_experiment("True Online Sarsa λ=0.5", n)
         plot_experiment("True Online Sarsa λ=0.8", n)
+    elif figure_num == 6:
+        global stoch
+        stoch = 1.0
+        plot = Plot('Performance over time, stochasticity=' + str(stoch), "Episodes",
+                    "Reward")
+        plot_experiment("True Online Sarsa λ=0.0", n)
+
+    elif figure_num == 7:
+        global stoch
+        stoch = 1.0
+        plot = Plot('Performance over time, stochasticity=' + str(stoch), "Episodes",
+                    "Reward")
+        plot_experiment("Q-learning", 201)
 
     plot.save(figure_num)
 

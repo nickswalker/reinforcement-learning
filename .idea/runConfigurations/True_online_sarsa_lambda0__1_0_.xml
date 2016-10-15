@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="True online sarsa lambda1 (0.2)" type="PythonConfigurationType" factoryName="Python" folderName="Stoch 0.2" singleton="true">
+  <configuration default="false" name="True online sarsa lambda0 (1.0)" type="PythonConfigurationType" factoryName="Python" folderName="Stoch 1.0" singleton="true">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
@@ -13,7 +13,7 @@
     <module name="rl-testbed" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/gridworld_runner.py" />
-    <option name="PARAMETERS" value="4 20 200 0.2" />
+    <option name="PARAMETERS" value="7 20 200 1.0" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <method />
   </configuration>

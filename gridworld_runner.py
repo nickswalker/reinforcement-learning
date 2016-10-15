@@ -54,6 +54,11 @@ def main():
         factory = agent_factory(true_online=True, lmbda=0.80)
         true_online_sarsa_lambda = run_experiment(num_trials, num_evaluations, factory)
         save("True Online Sarsa λ=0.8", true_online_sarsa_lambda)
+    elif experiment_num == 7:
+        factory = agent_factory(true_online=True, lmbda=0.00)
+        true_online_sarsa_lambda = run_experiment(num_trials, num_evaluations, factory)
+        save("True Online Sarsa λ=0.0", true_online_sarsa_lambda)
+
 
 
 def run_experiment(num_trials, num_evaluations,
@@ -72,7 +77,7 @@ def run_experiment(num_trials, num_evaluations,
                                                  num_evaluations,
                                                  agent_factory):
             evaluation = evaluate(table, agent_factory)
-            print(" R: " + str(evaluation))
+            # print(" R: " + str(evaluation))
             mean = None
             variance = None
             if j > len(evaluations_mean) - 1:
@@ -172,7 +177,7 @@ def train_agent(evaluation_period, num_stops, agent_factory):
     stops = 0
     for i in range(0, evaluation_period * num_stops):
         if i % evaluation_period is 0:
-            print(i)
+            #print(i)
             stops += 1
             yield i, copy.deepcopy(agent.value_function)
 
@@ -207,7 +212,7 @@ def agent_factory(initial_value=0.5,
                   expected=False, true_online=False, q_learning=False):
     def generate_agent(domain, task):
         if true_online:
-            agent = TrueOnlineSarsaLambda(domain, task, expected, lamb=lmbda)
+            agent = TrueOnlineSarsaLambda(domain, task, epsilon=epsilon, alpha=alpha, lamb=lmbda, expected=False)
         elif q_learning:
             agent = QLearning(domain, task)
         else:

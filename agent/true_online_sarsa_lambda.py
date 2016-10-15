@@ -59,7 +59,6 @@ class TrueOnlineSarsaLambda(Agent):
         state_prime = self.world.get_current_state()
         if self.task.stateisfinal(state_prime):
             self.update(state, action, state_prime, None, self.value_old, terminal=True)
-            reward = self.task.reward(state, action, state_prime)
 
     def update(self, state: State, action: Action, state_prime: State, action_prime: Action, value_old: float,
                terminal=False):
