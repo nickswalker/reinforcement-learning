@@ -13,7 +13,7 @@
     <module name="reinforcement-learning" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/gridworld_generate_plots.py" />
-    <option name="PARAMETERS" value="3" />
+    <option name="PARAMETERS" value="5" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <method />
   </configuration>

@@ -34,26 +34,26 @@ def main():
         factory = agent_factory(q_learning=True)
         q_learning_results = run_experiment(num_trials, num_evaluations, factory)
         save("Q-learning", q_learning_results)
-    if experiment_num == 1:
+    elif experiment_num == 1:
         factory = agent_factory()
         standard_results = run_experiment(num_trials, num_evaluations, factory)
         save("Sarsa", standard_results)
-    if experiment_num == 2:
+    elif experiment_num == 2:
         factory = agent_factory(expected=True)
         expected_results = run_experiment(num_trials, num_evaluations, factory)
         save("Expected Sarsa", expected_results)
-    if experiment_num == 4:
+    elif experiment_num == 4:
         factory = agent_factory(true_online=True, lmbda=0.10)
         true_online_results = run_experiment(num_trials, num_evaluations, factory)
         save("True Online Sarsa λ=0.1", true_online_results)
-    if experiment_num == 5:
+    elif experiment_num == 5:
         factory = agent_factory(true_online=True, lmbda=0.50)
         true_online_sarsa_lambda = run_experiment(num_trials, num_evaluations, factory)
         save("True Online Sarsa λ=0.5", true_online_sarsa_lambda)
-    if experiment_num == 5:
-        factory = agent_factory(true_online=True, lmbda=0.90)
+    elif experiment_num == 6:
+        factory = agent_factory(true_online=True, lmbda=0.80)
         true_online_sarsa_lambda = run_experiment(num_trials, num_evaluations, factory)
-        save("True Online Sarsa λ=0.9", true_online_sarsa_lambda)
+        save("True Online Sarsa λ=0.8", true_online_sarsa_lambda)
 
 
 def run_experiment(num_trials, num_evaluations,
@@ -72,6 +72,7 @@ def run_experiment(num_trials, num_evaluations,
                                                  num_evaluations,
                                                  agent_factory):
             evaluation = evaluate(table, agent_factory)
+            print(" R: " + str(evaluation))
             mean = None
             variance = None
             if j > len(evaluations_mean) - 1:
@@ -152,7 +153,6 @@ def evaluate(table, agent_factory) -> float:
             agent.episode_ended()
 
     # print(plot_trajectory(trajectory))
-    print(cumulative_reward)
     return cumulative_reward
 
 

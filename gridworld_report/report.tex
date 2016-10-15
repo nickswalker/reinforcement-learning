@@ -44,8 +44,8 @@
 	%----------------------------------------------------------------------------------------
 
 	\section{Motivation}
-	
-	We have covered numerous extensions to the fundamental TD approach. I applied 
+
+	Now that we have covered eligibility traces, we have a wide range of model-free TD algorithms that might be applied to a given problem. How do the performance of these different algorithms vary in relation to the characteristics of the environment? I sought to characterize the performance of model-free TD algorithms with respect to environment stochasticity.
 
 
 
@@ -55,20 +55,56 @@
 
 	\section{Introduction}
 
-	\subsection{Problem}
-	
-	I chose the stochastic windy gridworld task presented in example 6.5 and subsequent exercises. In this environment, the agent can move in cardinal directions, but for portions of the grid a stochastic wind may push the agent above or below its movement target. The agent receives -1 reward at each time step, except for actions that transition to the goal, which yield +20.
-	
+	\subsection{Task}
+
 			\begin{figure}[h]
 				\begin{center}
-					\includegraphics[width=\textwidth]{gridworld.png}
-					\caption{.}
+					\includegraphics[height=4cm]{gridworld.png}
+					\caption{The windy gridworld diagram from the book. The strength of the wind is given by the number underneath each column. }
 				\end{center}
 			\end{figure}
 
+	 In stochastic windy gridworld, presented in example 6.5 of the textbook, the agent can move in cardinal directions on a bounded 2D grid, but for portions of the grid a stochastic wind may push the agent above or below its movement target. The wind strength is an integer associated with a column that specifies the number of cells north that the agent will be offset if it attempts to move while in the column. I parameterized the environment's stochasticity such that for a value 1.0, there was an equiprobable random chance that the wind strength would be increased, decreased, or remain the same, and for a stochasticity of 0.0, the agent would be deterministically shifted up by strength number of cells. Intermediate values were interpolations, as below:
+     	$$ \begin{aligned}
+    p(\text{strength is raised} | stochasticity=0.5) = \frac{1}{4}\\
+       p(\text{strength is lowered} | stochasticity=0.5) = \frac{1}{4}\\
+      p(\text{strength stays the same} | stochasticity=0.5) = \frac{1}{2}
+      \end{aligned}$$
 
-	\subsection{Learning Approaches}
+    Columns that had strengths of 0 never experience wind, regardless of stochasticity.
 
+    The agent receives -1 reward for all actions except those that transition to the goal, which yield +20.
+
+	\subsection{Temporal difference algorithms}
+
+	Temporal difference algorithms principally differ in what target they use for bootstrapping. Their form is:
+
+     $$   Q(S_t,A_t) \leftarrow Q(S_t, A_t) + \alpha\big[ R_{t+1} + G_t  - Q(S_t, A_t)\big]$$
+
+     where $G_t$ is the bootstrapping estimate of the return.
+
+ \subsection{Q Learning}
+ $$   G_t = \gamma \text{max}_a Q(S_{t+1}, a) $$
+	Q-learning is an off-policy algorithm that learns action values of the optimal policy regardless of the learning policy. It requires that all states and actions be visited infinitely many times.
+
+\subsection{Sarsa}
+	$$G_t = \gamma Q(S_{t+1}, A_{t+1})$$
+
+	One-step Sarsa uses the value estimate for the next state-action pair observed under its policy as update target. Because this update depends on the next action, it can only be made one time step after the state is visited.
+
+\subsection{Expected Sarsa}
+	$$G_t = \gamma \mathbb{E}[Q(S_{t+1}, A_{t+1} | S_{t+1})]$$
+	One-step expected Sarsa uses the expected value of the next state-action pair under the policy as its target.
+
+\subsection{True Online Sarsa($\lambda$)}
+
+	$$\bm{\theta}_{t+1} \leftarrow \bm{\theta}_t + \alpha\delta_t\bm{e_t} + \alpha\big[ \gamma \hat v(S_{t}, A_{t}, \bm{\theta}_t) - \hat  v(S_{t}, A_{t}, \bm{\theta}_{t-1})\big](\bm{ e}_t - \bm{\phi}_t)$$
+
+    Where:
+$$\delta_t = R_{t+1} + \gamma \hat v(S_{t+1}, A_{t+1},\bm{\theta}_t) - \hat v(S_t, A_t, \bm{\theta}_t)$$
+$$\bm{e}_t = \gamma \lambda \bm{e}_{t-1} + \big(1 - \alpha \gamma \lambda \bm{e}_{t-1} ^\top \bm{\phi}_t \big) \bm{\phi}_t$$
+
+    Lambda return methods us an eligibility trace to bootstrap from averaged n-step returns. True online Sarsa($\lambda$) uses a so-called dutch trace, given above.
 
 
 	%----------------------------------------------------------------------------------------
@@ -78,7 +114,7 @@
 
 	\section{Experimental Setup}
 
-	\subsection{Features}
+	All agents used a tabular representation with value estimates initialized to 0. All agents learned with an $\epsilon$-greedy policy with $\epsilon=0.1$. Performance was evaluated by running one trial with $\alpha = \epsilon = 0$ every 50 episodes of learning. To constrain the number of free variables, I fixed $\alpha$ at 0.2 for all experiments.
 
 	%----------------------------------------------------------------------------------------
 	%	SECTION 4
@@ -90,12 +126,19 @@
 
 		\begin{figure}[h]
 			\begin{center}
-				\includegraphics[width=\textwidth]{figure_0.pdf}
-				\caption{.}
+				\includegraphics[width=6cm]{0.pdf}
+				\includegraphics[width=6cm]{1.pdf}
+				\includegraphics[width=6cm]{2.pdf}
+				\includegraphics[width=6cm]{3.pdf}
+				\includegraphics[width=6cm]{4.pdf}
+				\includegraphics[width=6cm]{5.pdf}
+				\caption{Bars are the .05 confidence interval }
 			\end{center}
 		\end{figure}
 
 	\subsection{Discussion}
+
+    All algorithms performed well when the environment was deterministic. As the stochasticity increased, the performance of true online Sarsa held, while the other algorithms struggled to converge.
 
 
 	%----------------------------------------------------------------------------------------
